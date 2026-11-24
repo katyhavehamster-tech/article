@@ -545,12 +545,20 @@ function toCSV() {
   return rows.join('\r\n');
 }
 function csvMsg(t, c) { const m = G('csvMsg'); m.textContent = t; m.className = 'msg ' + (c || ''); }
-G('csvDl').onclick = () => {
+let DLNS = null;
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(n => { DLNS = n; }).catch(() => {}); } catch (e) {}
+G('csvDl').onclick = async () => {
   if (!LOG.length) { csvMsg('Журнал порожній: спершу пройдіть хоча б одну сесію.', 'bad'); return; }
-  const csv = toCSV();
+  const csv = toCSV(), fname = `trenazher_${new Date().toISOString().slice(0, 10)}.csv`;
+  G('csvBox').value = csv;
+  if (DLNS) {
+    try { await DLNS.save({ filename: fname, data: '\ufeff' + csv }); csvMsg('Файл збережено.', 'good'); }
+    catch (e) { G('csvBox').hidden = false; csvMsg(e && e.code === 'declined' ? 'Збереження скасовано.' : 'Не вдалося зберегти файл тут; скопіюйте дані нижче.', 'bad'); }
+    return;
+  }
   try {
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a'); a.href = url; a.download = `trenazher_${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    const a = document.createElement('a'); a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
     csvMsg('Файл сформовано. Якщо завантаження не почалося, скористайтеся кнопкою «Копіювати CSV».', 'good');
   } catch (e) { csvMsg('Завантаження недоступне тут; скопіюйте дані нижче.', 'bad'); }
   G('csvBox').value = csv; G('csvBox').hidden = false;
