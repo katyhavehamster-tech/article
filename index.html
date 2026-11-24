@@ -86,6 +86,8 @@ td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .trio div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .trio b{display:block;font-family:Unbounded,sans-serif;font-size:20px;font-variant-numeric:tabular-nums}.trio span{font-size:13px;color:var(--mute)}
 .rng{display:block;margin:12px 0 4px;font-weight:600}.rng b{float:right;font-weight:600;color:var(--blue2)}
+#pid,#csvBox{width:100%;font:16px/1.4 "Golos Text",sans-serif;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+#csvBox{font-size:13px;margin-top:8px}
 input[type=range]{width:100%;height:32px;accent-color:var(--blue)}
 .cells{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;padding:6px}
 .cells i{aspect-ratio:1;border-radius:5px;background:var(--line)}.cells i.h{background:var(--yel)}.cells i.m{background:#8a93a6}
@@ -321,6 +323,14 @@ footer{border-top:1px solid var(--line);margin-top:20px}
         <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="hint" checked style="width:22px;height:22px"> Показувати точку упередження</label>
         <p id="feed" class="msg"></p>
         <div id="stats"></div>
+        <h3 style="margin-top:16px">Журнал сесій</h3>
+        <label for="pid" style="display:block;font-weight:600;margin-bottom:4px">Код учасника (необов’язково)</label>
+        <input id="pid" type="text" maxlength="20" placeholder="напр. K-07" autocomplete="off">
+        <div class="scroll" style="margin-top:8px"><table id="logT"></table></div>
+        <p class="muted" id="logInfo"></p>
+        <div class="seg" style="margin-top:8px"><button id="csvDl" class="pri">Завантажити CSV</button><button id="csvCp">Копіювати CSV</button><button id="logClr">Очистити журнал</button></div>
+        <p class="msg" id="csvMsg"></p>
+        <textarea id="csvBox" readonly hidden rows="6" aria-label="Дані CSV"></textarea>
         <div class="note"><b>Чесно про ПМ:</b> пістолет не є засобом протидії БпЛА: ефективна дальність до 50 м, ціль у кілька десятків сантиметрів. Поліцейські зазвичай відпрацьовують стрільбу на дистанціях до 25 м, а вбивча сила кулі зберігається до 300-350 м, тож стрільба вгору в населеному пункті небезпечна для сторонніх. Під загрозою дрона головне - укриття, маскування, розосередження й оповіщення. Тренажер показує принцип упередження, спільний для будь-якої стрілецької зброї.</div>
       </div>
     </div>
@@ -515,6 +525,49 @@ const roG = new ResizeObserver(() => { resize(); if (!st || !st.run) draw(); });
 function segBtns(id, arr, cur, lab, cb) { const el = G(id); el.innerHTML = arr.map((w, i) => `<button data-i="${i}" class="${i === cur ? 'on' : ''}">${lab(w)}</button>`).join(''); el.querySelectorAll('button').forEach(b => b.onclick = () => cb(+b.dataset.i)); }
 function weapBtns() { segBtns('weap', W8, wi, w => `${w.n} · ${w.v} м/с`, i => { if (st && st.run) return; wi = i; weapBtns(); hud(); }); }
 function diffBtns() { segBtns('diff', DIFF, di, d => d.n, i => { if (st && st.run) return; di = i; diffBtns(); const h = DIFF[di].hint; const cb = G('hint'); if (h !== null) cb.checked = !!h; cb.disabled = h !== null; draw(); }); }
+let LOG = [];
+try { LOG = JSON.parse(localStorage.getItem('pm-log') || '[]'); if (!Array.isArray(LOG)) LOG = []; } catch (e) { LOG = []; }
+try { G('pid').value = localStorage.getItem('pm-pid') || ''; } catch (e) {}
+G('pid').oninput = () => { try { localStorage.setItem('pm-pid', G('pid').value); } catch (e) {} };
+function saveLog() { try { localStorage.setItem('pm-log', JSON.stringify(LOG)); } catch (e) {} }
+const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => v === null || v === undefined ? '' : String(v).replace('.', ',');
+const COLS = [['t', 'Дата і час'], ['pid', 'Учасник'], ['mode', 'Режим'], ['weap', 'Зброя'], ['hint', 'Підказка'], ['shots', 'Постріли'], ['hits', 'Влучання'], ['acc', 'Влучність, %'], ['react', 'Час реакції, с'], ['per', 'Набоїв на ураження'], ['me', 'Середня помилка, м (+ позаду)'], ['ae', 'Середня абсолютна помилка, м']];
+function fmtT(iso) { const d = new Date(iso); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function renderLog() {
+  const last = LOG.slice(-8).reverse();
+  G('logT').innerHTML = LOG.length ? `<thead><tr><th>Час</th><th>Зброя</th><th class="n">Влучність</th><th class="n">Помилка, м</th></tr></thead><tbody>${last.map(r => `<tr><td>${esc(fmtT(r.t).slice(0, 5) + fmtT(r.t).slice(10))}</td><td>${esc(r.weap)}</td><td class="n">${esc(num(r.acc))} %</td><td class="n">${r.me === null ? '-' : esc(num(r.me))}</td></tr>`).join('')}</tbody>` : '';
+  G('logInfo').textContent = LOG.length ? `Збережено сесій: ${LOG.length} (на цьому пристрої). У таблиці - останні ${last.length}.` : 'Журнал порожній. Після кожної 60-секундної сесії результат з’явиться тут.';
+}
+function toCSV() {
+  const q = v => { const t = String(v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const rows = [COLS.map(c => c[1]).join(';')].concat(LOG.map(r => COLS.map(([k]) => q(k === 't' ? fmtT(r[k]) : k === 'hint' ? (r[k] ? 'так' : 'ні') : typeof r[k] === 'number' ? num(r[k]) : (r[k] ?? ''))).join(';')));
+  return rows.join('\r\n');
+}
+function csvMsg(t, c) { const m = G('csvMsg'); m.textContent = t; m.className = 'msg ' + (c || ''); }
+G('csvDl').onclick = () => {
+  if (!LOG.length) { csvMsg('Журнал порожній: спершу пройдіть хоча б одну сесію.', 'bad'); return; }
+  const csv = toCSV();
+  try {
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = `trenazher_${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+    csvMsg('Файл сформовано. Якщо завантаження не почалося, скористайтеся кнопкою «Копіювати CSV».', 'good');
+  } catch (e) { csvMsg('Завантаження недоступне тут; скопіюйте дані нижче.', 'bad'); }
+  G('csvBox').value = csv; G('csvBox').hidden = false;
+};
+G('csvCp').onclick = async () => {
+  if (!LOG.length) { csvMsg('Журнал порожній.', 'bad'); return; }
+  const csv = toCSV(); G('csvBox').value = csv; G('csvBox').hidden = false;
+  try { await navigator.clipboard.writeText(csv); csvMsg('Скопійовано. Вставте в Excel або Google Таблиці.', 'good'); }
+  catch (e) { G('csvBox').select(); csvMsg('Виділіть текст у полі нижче й скопіюйте вручну.', ''); }
+};
+let clrArm = 0;
+G('logClr').onclick = () => {
+  if (!LOG.length) return;
+  if (!clrArm) { clrArm = 1; G('logClr').textContent = 'Натисніть ще раз, щоб видалити'; csvMsg(`Буде видалено ${LOG.length} сесій. Спершу збережіть CSV.`, 'bad'); setTimeout(() => { clrArm = 0; G('logClr').textContent = 'Очистити журнал'; }, 4000); return; }
+  LOG = []; saveLog(); renderLog(); clrArm = 0; G('logClr').textContent = 'Очистити журнал'; G('csvBox').hidden = true; csvMsg('Журнал очищено.', '');
+};
+renderLog();
 function newGame() {
   st = { run: true, t: 60, hit: 0, shot: 0, ammo: W8[wi].m, rel: 0, react: [], err: [], miss: 0 };
   drones = []; shots = []; fx = []; spawnT = 0; clock = 0; G('over').hidden = true; G('feed').textContent = ''; G('stats').innerHTML = ''; hud(); last = performance.now(); requestAnimationFrame(loop);
@@ -559,6 +612,9 @@ function summary() {
     <tr><td>Витрата набоїв на одне ураження</td><td class="n">${s.hit ? fx2(per, 1) : '-'}</td></tr>
     <tr><td>Середня помилка упередження</td><td class="n">${s.err.length ? (me > 0 ? 'позаду ' : 'попереду ') + fx2(Math.abs(me), 1) + ' м' : '-'}</td></tr>
   </tbody></table></div><p class="muted">${tip} Показники відповідають критеріям оцінювання індивідуального рівня методики.</p>`;
+  const ae = s.err.length ? s.err.reduce((a, b) => a + Math.abs(b), 0) / s.err.length : null;
+  LOG.push({ t: new Date().toISOString(), pid: (G('pid').value || '').trim(), mode: DIFF[di].n, weap: W8[wi].n, hint: G('hint').checked ? 1 : 0, shots: s.shot, hits: s.hit, acc: s.shot ? +(acc.toFixed(1)) : 0, react: s.react.length ? +rt.toFixed(2) : null, per: s.hit ? +per.toFixed(2) : null, me: s.err.length ? +me.toFixed(2) : null, ae: ae === null ? null : +ae.toFixed(2) });
+  saveLog(); renderLog();
   G('ovTitle').textContent = `Результат: ${s.hit} з ${s.shot}`;
   G('ovText').textContent = s.shot ? `Влучність ${fx2(acc, 0)} %. ${tip}` : 'Пострілів не було.';
 }
