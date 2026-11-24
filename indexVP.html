@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ПМ: тренажер</title>
+<meta name="description" content="Навчальний тренажер: будова й неповне розбирання пістолета Макарова, основи вогневої підготовки, тест і трирівневий тренажер стрільби по БпЛА.">
+<meta property="og:title" content="ПМ: тренажер">
+<meta property="og:description" content="Будова й розбирання ПМ, вогнева підготовка, тренажер упередження по БпЛА.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f4fbf'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23ffd23f' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Golos+Text:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday learning, with one game: clear, firm, like a range instructor
+   IDEA a police armoury training board: blueprint of the pistol, step cards, a range target
+   PICTURE the PM drawn large, parts clickable, animating through field-stripping; a sky range for the drone game
+   COLOUR police blue field, white ground, gunmetal ink, signal yellow for the selected part and hits
+   TYPE Unbounded for titles, Golos Text for text (both Cyrillic)
+   LAYOUT blue band with title + tabs; drawing left 60%, step/part panel right; stacks under 760px */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d1320);--ink:light-dark(#121a2b,#e7ecf6);--mute:light-dark(#5a6478,#9aa6bd);--line:light-dark(#d9dfeb,#26324a);--panel:light-dark(#f3f6fb,#141c2d);--blue:#1f4fbf;--blue2:light-dark(#1f4fbf,#8fb0ff);--yel:#ffd23f;--red:#e0412f;--ok:light-dark(#137a3e,#5fd08f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Golos Text",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Unbounded,"Golos Text",sans-serif;line-height:1.1;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1{font-size:clamp(26px,4vw,40px);font-weight:800}
+h2{font-size:clamp(20px,2.6vw,26px);font-weight:600;margin-bottom:12px}
+h3{font-size:17px;font-weight:600;margin:0 0 6px}
+.top{background:var(--blue);color:#fff;padding:22px max(4vw,16px) 0}
+.top p{margin:6px 0 16px;color:#dfe8ff;max-width:70ch}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{color:#fff;text-decoration:none;padding:12px 16px;border-radius:10px 10px 0 0;font-weight:600;min-height:44px}
+nav a[aria-current=page]{background:var(--bg);color:var(--ink)}
+nav a:focus-visible,button:focus-visible{outline:3px solid var(--yel);outline-offset:2px}
+.band{padding:clamp(20px,3vw,40px) max(4vw,16px);max-width:1280px;margin:0 auto}
+section[hidden]{display:none}
+.split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:760px){.split{grid-template-columns:1fr}}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
+.board svg{display:block;width:100%;height:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+button{font:inherit;font-weight:600;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--blue2)}
+button.on,button.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.chips button{min-height:38px;font-size:14px;padding:6px 10px}
+.muted{color:var(--mute);font-size:14px}
+dl{margin:0}dt{font-weight:700;margin-top:8px}dd{margin:0}
+ol.steps{padding-left:0;list-style:none;margin:0;counter-reset:s}
+ol.steps li{counter-increment:s;padding:10px 10px 10px 46px;border-radius:10px;position:relative;margin-bottom:6px;border:1px solid transparent}
+ol.steps li::before{content:counter(s);position:absolute;left:10px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-weight:700;font-size:14px}
+ol.steps li.done{color:var(--mute)}ol.steps li.done::before{background:var(--ok);color:#fff;content:"✓"}
+ol.steps li.cur{border-color:var(--blue2);background:var(--bg)}
+.opts{display:grid;gap:8px}.opts button{text-align:left;font-weight:400;min-height:48px}
+.msg{min-height:24px;margin:10px 0;font-weight:600}.good{color:var(--ok)}.bad{color:var(--red)}
+.part{cursor:pointer;transition:transform .7s cubic-bezier(.4,.1,.2,1),opacity .5s;transform-box:view-box}
+.part.sel>*{filter:drop-shadow(0 0 3px var(--yel)) drop-shadow(0 0 2px var(--yel))}
+@media(prefers-reduced-motion:reduce){.part{transition:none}}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.ttx{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5em,1fr));gap:10px;margin-bottom:8px}
+.ttx div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.ttx b{display:block;font-family:Unbounded,sans-serif;font-size:22px;white-space:nowrap}
+.ttx span{font-size:14px;color:var(--mute)}
+ul.tick{padding-left:20px;margin:0}ul.tick li{margin-bottom:6px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:14px;color:var(--mute)}
+td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.game{position:relative;border-radius:16px;overflow:hidden;background:#7fb6e8;touch-action:manipulation;user-select:none}
+.game canvas{display:block;width:100%;height:clamp(300px,52vw,520px);cursor:crosshair}
+.hud{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:12px 0}
+.hud b{font-variant-numeric:tabular-nums}
+.over{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,20,40,.55);color:#fff;text-align:center;padding:16px}
+.over[hidden]{display:none}
+.over div{max-width:440px}.over h3{font-size:22px;margin-bottom:8px}
+.note{border-left:4px solid var(--yel);padding:8px 14px;background:var(--panel);border-radius:0 10px 10px 0;margin:14px 0}
+.quiz{max-width:720px}
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.qcard p.q{font-size:19px;font-weight:600;margin:0 0 14px}
+.big b{display:block;font-family:Unbounded,sans-serif;font-size:clamp(40px,6vw,60px);line-height:1;color:var(--blue2);font-variant-numeric:tabular-nums}
+.big span{color:var(--mute);font-size:14px}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.trio div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.trio b{display:block;font-family:Unbounded,sans-serif;font-size:20px;font-variant-numeric:tabular-nums}.trio span{font-size:13px;color:var(--mute)}
+.rng{display:block;margin:12px 0 4px;font-weight:600}.rng b{float:right;font-weight:600;color:var(--blue2)}
+input[type=range]{width:100%;height:32px;accent-color:var(--blue)}
+.cells{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:5px;padding:6px}
+.cells i{aspect-ratio:1;border-radius:5px;background:var(--line)}.cells i.h{background:var(--yel)}.cells i.m{background:#8a93a6}
+.bar{display:grid;grid-template-columns:1.6em minmax(0,1fr) 3.6em;gap:8px;align-items:center;margin:4px 0;font-size:14px}
+.bar div{background:var(--line);border-radius:6px;height:16px;overflow:hidden}.bar i{display:block;height:100%;background:var(--blue2)}
+.bar.cur b,.bar.cur span{color:var(--blue2);font-weight:700}.bar b{text-align:right;font-variant-numeric:tabular-nums}
+.board svg#sight{max-width:520px;margin:0 auto}
+.zoom{display:block;width:100%;max-height:190px;background:var(--bg);border:1px solid var(--line);border-radius:12px;margin:10px 0 4px;padding:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.card svg{display:block;width:100%;height:auto;margin-bottom:8px}
+.card h3{font-size:15px;margin-bottom:4px}.card p{margin:0;font-size:14px;color:var(--mute)}
+.card.ok{border-color:var(--ok)}
+.duo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:center}
+@media(max-width:700px){.duo{grid-template-columns:1fr}}
+.ico{width:96px;height:56px;display:block}
+.scale{min-width:720px}
+#sights{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+footer{border-top:1px solid var(--line);margin-top:20px}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:8px;border-bottom:1px solid var(--line)}.stack td{display:block;border:0;padding:2px 0}.stack td::before{content:attr(data-l)": ";font-weight:700}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>9-мм пістолет Макарова: тренажер</h1>
+  <p>Будова й призначення частин, неповне розбирання і збирання, основи вогневої підготовки, тест і трирівневий тренажер стрільби по БпЛА: калькулятор упередження, тренування з оцінюванням і моделювання секторної стрільби.</p>
+  <nav id="nav">
+    <a href="#budova">Будова і розбирання</a>
+    <a href="#vohneva">Вогнева підготовка</a>
+    <a href="#bpla">Стрільба по БпЛА</a>
+    <a href="#test">Тест</a>
+  </nav>
+</header>
+
+<main>
+<section id="v-budova" class="band">
+  <div class="split">
+    <div class="board">
+      <svg id="pm" viewBox="0 0 740 480" role="img" aria-label="Схема пістолета Макарова, частини можна натискати">
+        <defs>
+          <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a5262"/><stop offset="1" stop-color="#262b34"/></linearGradient>
+          <linearGradient id="steel2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7486"/><stop offset="1" stop-color="#3a414e"/></linearGradient>
+          <pattern id="check" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="#3b2a21"/><path d="M0 0H7M0 0V7" stroke="#21160f" stroke-width="1.6"/></pattern>
+        </defs>
+        <g id="g-mag" class="part" data-part="mag">
+          <path d="M150 222H226L206 404H124Z" fill="url(#steel2)"/>
+          <path d="M158 230H218L214 262H155Z" fill="#c9a24a" opacity=".85"/>
+          <rect x="112" y="402" width="104" height="16" rx="4" fill="#2a2f38"/>
+        </g>
+        <g id="g-barrel" class="part" data-part="frame">
+          <rect x="186" y="154" width="384" height="26" rx="3" fill="url(#steel2)"/>
+          <rect x="566" y="154" width="6" height="26" fill="#1b1f26"/>
+        </g>
+        <g id="g-spring" class="part" data-part="spring">
+          <path id="springpath" fill="none" stroke="#a8b1bd" stroke-width="3.2"/>
+        </g>
+        <g id="g-frame" class="part" data-part="frame">
+          <path d="M100 196H548V208Q548 218 538 218H258Q246 218 244 232L220 398Q218 410 206 410H108Q96 410 98 398L124 232Q126 214 104 206Z" fill="url(#steel)"/>
+          <path d="M106 198H546" stroke="#6b7486" stroke-width="2"/>
+        </g>
+        <g id="g-guard" class="part" data-part="frame" style="transform-origin:396px 218px">
+          <path d="M262 218Q260 292 330 293Q394 292 396 218" fill="none" stroke="#2e343e" stroke-width="10" stroke-linecap="round"/>
+        </g>
+        <g id="g-usm" class="part" data-part="usm">
+          <path d="M320 222Q304 246 312 268Q318 274 324 268Q318 248 332 226Z" fill="#20252d"/>
+          <g id="g-ham" style="transform-origin:104px 182px;transition:transform .35s">
+            <path d="M104 150Q84 146 76 160Q72 174 86 180L104 184Z" fill="#2a2f38"/>
+            <circle cx="88" cy="163" r="4" fill="var(--panel)"/>
+          </g>
+        </g>
+        <g id="g-stop" class="part" data-part="stop">
+          <rect x="208" y="199" width="46" height="10" rx="4" fill="#7d8698"/>
+          <circle cx="248" cy="204" r="5" fill="#5b6473"/>
+        </g>
+        <g id="g-grip" class="part" data-part="grip">
+          <path d="M136 230H228L208 394H116Z" fill="url(#check)"/>
+          <circle cx="170" cy="316" r="8" fill="#6b7486"/><path d="M164 316H176" stroke="#2a2f38" stroke-width="2"/>
+        </g>
+        <g id="g-slide" class="part" data-part="slide" style="transform-origin:568px 196px">
+          <path d="M108 140H560Q568 140 568 148V196H108Q100 196 100 188V150Q100 140 108 140Z" fill="url(#steel)"/>
+          <path d="M108 143H562" stroke="#7b8496" stroke-width="2"/>
+          <g id="serr" stroke="#1d2128" stroke-width="2.4"></g>
+          <rect x="330" y="148" width="64" height="20" rx="3" fill="#161a20"/>
+          <rect x="546" y="131" width="12" height="10" rx="2" fill="#2a2f38"/>
+          <path d="M112 131H130V141H112ZM118 131H124V136H118Z" fill="#2a2f38" fill-rule="evenodd"/>
+          <g id="g-safety"><circle cx="152" cy="176" r="9" fill="#5b6473"/><path id="safety-lever" d="M152 176L186 168" stroke="#5b6473" stroke-width="6" stroke-linecap="round" style="transform-origin:152px 176px;transition:transform .3s"/></g>
+        </g>
+        <text id="svgmsg" x="20" y="470" text-anchor="start" font-size="15" fill="var(--mute)" font-family="Golos Text"></text>
+      </svg>
+    </div>
+    <div class="panel">
+      <div class="seg" role="tablist">
+        <button id="m-parts" class="on">Деталі</button>
+        <button id="m-dis">Розбирання</button>
+        <button id="m-asm">Збирання</button>
+      </div>
+      <div id="pane"></div>
+    </div>
+  </div>
+  <p class="muted">Порядок неповного розбирання і збирання, назви частин та їх призначення подано за навчальним матеріалом НАВС «Пістолет Макарова». Схема умовна, не в масштабі.</p>
+</section>
+
+<section id="v-vohneva" class="band" hidden>
+  <h2>Тактико-технічні характеристики</h2>
+  <div class="ttx" id="ttx"></div>
+  <p class="muted">Автоматика працює за принципом віддачі вільного затвора; патрон 9×18 мм, магазин однорядний, УСМ одинарної або подвійної (самозвод) дії.</p>
+  <h2 style="margin-top:28px">Патрон 9×18 мм</h2>
+  <div class="duo">
+    <div class="board"><svg viewBox="0 0 540 230" role="img" aria-label="Будова патрона 9×18 мм">
+      <defs><linearGradient id="brass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d27a"/><stop offset=".5" stop-color="#d6a640"/><stop offset="1" stop-color="#9c7424"/></linearGradient>
+      <linearGradient id="bul" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9a07a"/><stop offset=".5" stop-color="#b06c45"/><stop offset="1" stop-color="#6f3f25"/></linearGradient></defs>
+      <rect x="128" y="66" width="14" height="98" rx="3" fill="#a77d2c"/>
+      <rect x="140" y="70" width="190" height="90" rx="4" fill="url(#brass)"/>
+      <path d="M140 115H330V160H140Z" fill="#7a5a1c" opacity=".35"/>
+      <rect x="146" y="118" width="150" height="38" rx="3" fill="#3b3326"/>
+      <g fill="#8c8473"><circle cx="152" cy="122" r="2"/><circle cx="189" cy="135" r="3"/><circle cx="226" cy="148" r="4"/><circle cx="263" cy="131" r="2"/><circle cx="160" cy="144" r="3"/><circle cx="197" cy="127" r="4"/><circle cx="234" cy="140" r="2"/><circle cx="271" cy="123" r="3"/><circle cx="168" cy="136" r="4"/><circle cx="205" cy="149" r="2"/><circle cx="242" cy="132" r="3"/><circle cx="279" cy="145" r="4"/><circle cx="176" cy="128" r="2"/><circle cx="213" cy="141" r="3"/><circle cx="250" cy="124" r="4"/><circle cx="287" cy="137" r="2"/><circle cx="184" cy="150" r="3"/><circle cx="221" cy="133" r="4"/><circle cx="258" cy="146" r="2"/><circle cx="155" cy="129" r="3"/><circle cx="192" cy="142" r="4"/><circle cx="229" cy="125" r="2"/><circle cx="266" cy="138" r="3"/><circle cx="163" cy="151" r="4"/><circle cx="200" cy="134" r="2"/><circle cx="237" cy="147" r="3"/></g>
+      <path d="M296 74H330Q404 84 408 115Q404 146 330 156H296Z" fill="url(#bul)"/>
+      <rect x="128" y="104" width="8" height="22" rx="2" fill="#c9c2b0"/>
+      <g stroke="var(--ink)" stroke-width="1.5" fill="none"><path d="M380 92L430 52H470"/><path d="M230 72L250 40H300"/><path d="M220 140L250 196H300"/><path d="M132 112L92 70H60"/></g>
+      <g font-family="Golos Text" font-size="20" fill="var(--ink)"><text x="474" y="58">Куля</text><text x="306" y="45">Гільза</text><text x="306" y="201">Пороховий заряд</text><text x="10" y="65">Капсуль</text></g>
+      <g font-family="Golos Text" font-size="17" fill="var(--mute)"><text x="120" y="224">9 мм - калібр, 18 мм - довжина гільзи</text></g>
+    </svg></div>
+    <div>
+      <dl>
+        <dt>Куля</dt><dd>уражає ціль; у ПМ обертається завдяки 4 правостороннім нарізам ствола.</dd>
+        <dt>Гільза</dt><dd>містить пороховий заряд і з’єднує всі частини патрона.</dd>
+        <dt>Пороховий заряд</dt><dd>згоряючи, утворює гази, які виштовхують кулю з каналу ствола.</dd>
+        <dt>Капсуль</dt><dd>від удару ударника запалює пороховий заряд.</dd>
+      </dl>
+    </div>
+  </div>
+  <h2 style="margin-top:28px">Прицілювання: рівна мушка та типові помилки</h2>
+  <div class="cards" id="sights"></div>
+  <div class="grid2" style="margin-top:28px">
+    <div>
+      <h2>Заходи безпеки</h2>
+      <ul class="tick">
+        <li>Поводитися з пістолетом завжди як із зарядженим.</li>
+        <li>Не спрямовувати зброю на людей і туди, де не дозволено стріляти.</li>
+        <li>Палець тримати поза спусковим гачком, доки не ухвалено рішення стріляти.</li>
+        <li>Перед розбиранням і після стрільби обов’язково від’єднати магазин і перевірити патронник.</li>
+        <li>На стрільбищі діяти лише за командою керівника стрільби, у визначеному секторі.</li>
+        <li>У разі затримки тримати пістолет спрямованим у бік цілей.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Прийоми стрільби</h2>
+      <ul class="tick">
+        <li><b>Хват:</b> рукоятка щільно в долоні, ствол на лінії передпліччя, хват без перекосу.</li>
+        <li><b>Прицілювання:</b> рівна мушка: вершина мушки посередині прорізу цілика врівень з його верхніми краями; погляд на мушці.</li>
+        <li><b>Дихання:</b> після неповного видиху затримати дихання на час пострілу.</li>
+        <li><b>Спуск:</b> плавно натискати на гачок прямо назад, не «смикати».</li>
+        <li><b>Після пострілу:</b> утримати прицілювання, оцінити результат, повторити.</li>
+      </ul>
+    </div>
+  </div>
+  <h2 style="margin-top:28px">Орієнтовна послідовність навчання</h2>
+  <div class="scroll"><table class="stack">
+    <thead><tr><th>Етап</th><th>Зміст</th><th>Результат</th></tr></thead>
+    <tbody id="prog"></tbody>
+  </table></div>
+  <p class="muted">Узагальнена схема для самопідготовки. Офіційні вправи й нормативи визначають Курс стрільб для поліцейських (наказ МВС № 334 від 26.04.2019) і кафедра вогневої підготовки.</p>
+  <h2 style="margin-top:28px">Контекст ХНУВС</h2>
+  <div class="cards">
+    <div class="panel"><h3>Кафедра вогневої підготовки факультету № 3</h3><p>Навчальний посібник «Вогнева підготовка» (В. В. Федоров, П. В. Пістряк, А. Ф. Бальва, І. С. Луценко, В. В. Чумак; ХНУВС, 2019) охоплює роль вогневої підготовки в діяльності поліцейських та організацію занять.</p></div>
+    <div class="panel"><h3>Практична стрільба і стресостійкість</h3><p>В. Федоров і О. Піскунова (ХНУВС) наголошують: психологічну готовність до застосування зброї не сформувати лише в аудиторії; Курс стрільб уже містить стрільбу з-за укриттів, після фізичного навантаження, за поганого освітлення, і його варто доповнювати варіативними вправами.</p></div>
+    <div class="panel"><h3>Безпека стрільби в місті</h3><p>Т. Орлова (ХНУВС): у ПМ і «Форту-17» ефективна дальність близько 50 м, поліцейські тренуються до 25 м, а вбивча сила кулі зберігається до 300-350 м, тому кожен постріл у місті несе ризик для сторонніх.</p></div>
+    <div class="panel"><h3>БпЛА в підготовці курсантів</h3><p>Викладачі кафедри тактичної та спеціальної фізичної підготовки факультету № 3 і курсанти ХНУВС пройшли курси інструкторів з підготовки розрахунків БпЛА; у дисципліні «Тактико-спеціальна підготовка» вивчають застосування БпЛА в роботі поліції.</p></div>
+  </div>
+  <h2 style="margin-top:28px">Затримки під час стрільби</h2>
+  <div class="scroll"><table class="stack">
+    <thead><tr><th>Схема</th><th>Затримка</th><th>Ознака</th><th>Дії стрільця</th></tr></thead>
+    <tbody id="zatr"></tbody>
+  </table></div>
+  <p class="muted">Заміну деталей виконують у майстерні (зброяр), не на вогневому рубежі.</p>
+</section>
+
+<section id="v-bpla" class="band" hidden>
+  <div class="seg" id="lvl">
+    <button data-l="1" class="on">Рівень 1 · Калькулятор упередження</button>
+    <button data-l="2">Рівень 2 · Тренажер стрільби</button>
+    <button data-l="3">Рівень 3 · Секторна стрільба</button>
+  </div>
+
+  <div id="L1">
+    <div class="split">
+      <div class="board"><svg id="sight" viewBox="0 0 420 420" role="img" aria-label="Картина прицілювання: дрон і точка упередження"></svg><p class="muted" style="margin:8px 6px 2px">Картина прицілювання в момент пострілу: перехрестя (червоне коло) винесене вперед по ходу дрона. Поділка шкали - 10 тисячних.</p></div>
+      <div class="panel">
+        <div class="big"><b id="cL">0</b><span>м лінійне упередження (мінімум)</span></div>
+        <div class="trio"><div><b id="cPhi">0</b><span>тисячних</span></div><div><b id="cN">0</b><span>габаритів дрона</span></div><div><b id="cT">0</b><span>с політ кулі</span></div></div>
+        <h3 style="margin-top:14px">Зброя</h3>
+        <div class="seg" id="cW"></div>
+        <label class="rng" for="rV">Швидкість дрона <b id="oV"></b><input type="range" id="rV" min="2" max="40" step="1" value="15"></label>
+        <label class="rng" for="rD">Дальність <b id="oD"></b><input type="range" id="rD" min="10" max="200" step="5" value="30"></label>
+        <label class="rng" for="rA">Кут між курсом дрона і лінією вогню <b id="oA"></b><input type="range" id="rA" min="0" max="90" step="5" value="90"></label>
+        <div class="chips" id="pre"></div>
+        <p class="msg bad" id="cWarn"></p>
+      </div>
+    </div>
+    <h2 style="margin-top:26px">Чому з ПМ упередження таке велике</h2>
+    <p style="max-width:72ch">Час польоту кулі t ≥ D / v<sub>0</sub>, тож лінійне упередження L ≥ V<sub>⊥</sub> · D / v<sub>0</sub>, а кутове φ ≈ V<sub>⊥</sub> / v<sub>0</sub> у першому наближенні не залежить від дальності. V<sub>⊥</sub> = V · sin θ: дрон, що летить прямо на стрільця (θ = 0), упередження майже не потребує, а той, що перетинає лінію вогню (θ = 90°), потребує найбільшого. Таблиця для V = 15 м/с, D = 30 м, θ = 90°:</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Зброя</th><th class="n">v<sub>0</sub>, м/с</th><th class="n">t, с</th><th class="n">L, м</th><th class="n">φ, тисячних</th><th class="n">L у габаритах дрона (0,4 м)</th></tr></thead>
+      <tbody id="cmp"></tbody>
+    </table></div>
+    <h2 style="margin-top:26px">Повітряні цілі в масштабі</h2>
+    <p style="max-width:72ch">Вигляд спереду, в одному масштабі з людиною зростом 1,75 м. Розміри орієнтовні. Чинні рекомендації щодо прицілювання розраховані на цілі розміром у кілька метрів, а FPV-дрон у 5-10 разів менший.</p>
+    <div class="board scroll"><svg class="scale" id="scaleSvg" viewBox="0 0 960 300" role="img" aria-label="Порівняння розмірів БпЛА з людиною"></svg></div>
+    <div class="cards" style="margin-top:12px" id="types"></div>
+  </div>
+
+  <div id="L2" hidden>
+    <div class="split">
+      <div>
+        <div class="game" id="game">
+          <canvas id="cv" aria-label="Тренажер упередження: натискайте по небу, щоб вистрілити"></canvas>
+          <div class="over" id="over"><div>
+            <h3 id="ovTitle">Тренажер упередження</h3>
+            <p id="ovText">Дрони перетинають небо. Куля летить не миттєво, тож цілитися треба попереду дрона. Натискайте по небу, щоб вистрілити; R або кнопка «Перезарядити».</p>
+            <button class="pri" id="start">Почати 60 секунд</button>
+          </div></div>
+        </div>
+        <div class="hud">
+          <span>Час: <b id="hT">60</b> с</span><span>Влучання: <b id="hH">0</b></span><span>Постріли: <b id="hS">0</b></span><span>Набоїв: <b id="hA">8</b></span><span>Рекорд: <b id="hB">0</b></span>
+          <button id="reload">Перезарядити</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Режим</h3>
+        <div class="seg" id="diff"></div>
+        <h3>Зброя</h3>
+        <div class="seg" id="weap"></div>
+        <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="hint" checked style="width:22px;height:22px"> Показувати точку упередження</label>
+        <p id="feed" class="msg"></p>
+        <div id="stats"></div>
+        <div class="note"><b>Чесно про ПМ:</b> пістолет не є засобом протидії БпЛА: ефективна дальність до 50 м, ціль у кілька десятків сантиметрів. Поліцейські зазвичай відпрацьовують стрільбу на дистанціях до 25 м, а вбивча сила кулі зберігається до 300-350 м, тож стрільба вгору в населеному пункті небезпечна для сторонніх. Під загрозою дрона головне - укриття, маскування, розосередження й оповіщення. Тренажер показує принцип упередження, спільний для будь-якої стрілецької зброї.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="L3" hidden>
+    <div class="split">
+      <div class="board">
+        <div class="cells" id="cells" aria-label="100 змодельованих атак"></div>
+        <p class="muted" style="margin:10px 4px 0">Кожна клітинка - одна атака дрона на сектор: жовта - дрон уражено, сіра - ні.</p>
+      </div>
+      <div class="panel">
+        <div class="big"><b id="sP">0</b><span>% атак відбито (теоретично)</span></div>
+        <div class="trio"><div><b id="sP1">0</b><span>% одним стрільцем</span></div><div><b id="sE">-</b><span>% у моделюванні</span></div><div><b id="sG">0</b><span>разів виграш</span></div></div>
+        <label class="rng" for="rp">Імовірність влучання одного стрільця <b id="op"></b><input type="range" id="rp" min="1" max="40" value="10"></label>
+        <label class="rng" for="rn">Стрільців у секторі <b id="on"></b><input type="range" id="rn" min="1" max="6" value="3"></label>
+        <label class="rng" for="rc">Спільна помилка (кореляція) <b id="oc"></b><input type="range" id="rc" min="0" max="80" step="5" value="0"></label>
+        <button class="pri" id="sim">Змоделювати 100 атак</button>
+        <h3 style="margin-top:16px">Залежність від кількості стрільців</h3>
+        <div id="bars"></div>
+      </div>
+    </div>
+    <p style="max-width:72ch;margin-top:18px">P<sub>n</sub> = 1 − (1 − p)<sup>n</sup> для незалежних стрільців. Якщо всі стрільці однаково помиляються в оцінці швидкості цілі (спільна помилка з часткою c), реальний виграш менший: P = c · p + (1 − c) · P<sub>n</sub>. Тому зосередження вогню має поєднуватися з навчанням точно оцінювати рух цілі.</p>
+  </div>
+</section>
+
+<section id="v-test" class="band" hidden>
+  <div class="quiz">
+    <h2>Перевір себе</h2>
+    <div class="qcard" id="qcard"></div>
+  </div>
+</section>
+</main>
+
+<footer class="band">
+  <p class="muted">Джерела: <a href="https://kcspp.navs.edu.ua/assets/files/2025/VogPid/%D0%9F%D1%96%D1%81%D1%82%D0%BE%D0%BB%D0%B5%D1%82%20%D0%9C%D0%B0%D0%BA%D0%B0%D1%80%D0%BE%D0%B2%D0%B0.pdf">НАВС, «Пістолет Макарова»</a> (ТТХ, частини, розбирання); <a href="https://core.ac.uk/download/333964393.pdf">ХНУВС, «Вогнева підготовка», 2019</a>; <a href="https://doi.org/10.32631/pb.2021.1.09">Федоров, Піскунова, «Право і безпека», 2021</a>; <a href="https://univd.edu.ua/uk/news/15219">новина ХНУВС про курси БпЛА</a>.</p>
+  <p class="muted">Навчальний засіб, розроблений для здобувачів ХНУВС; не є офіційним ресурсом університету й не замінює занять з інструктором.</p>
+</footer>
+
+<script>
+{
+const $ = s => document.querySelector(s);
+const PARTS = {
+  frame: ['Рамка зі стволом і спусковою скобою', [['Рамка', 'з’єднує всі частини пістолета; разом з основою рукоятки становить одне ціле. Основа рукоятки кріпить бойову пружину й рукоятку та вміщує магазин.'], ['Ствол', 'задає напрямок польоту кулі та надає їй обертального руху (4 правосторонні нарізи).'], ['Спускова скоба', 'захищає від випадкового натискання на спусковий гачок.']]],
+  slide: ['Затвор з ударником, викидачем і запобіжником', [['Затвор', 'подає патрон з магазина в патронник, запирає канал ствола під час пострілу, витягує гільзу, ставить курок на бойовий взвод.'], ['Ударник', 'розбиває капсуль патрона.'], ['Викидач', 'утримує гільзу в чашці затвора до зустрічі з відбивачем.'], ['Запобіжник', 'забезпечує безпечне поводження з пістолетом.'], ['Мушка і цілик', 'для прицілювання.']]],
+  spring: ['Зворотна пружина', [['Призначення', 'повертає затвор у крайнє переднє положення після пострілу. Надівається на ствол кінцем, у якого крайній виток меншого діаметра.']]],
+  usm: ['Ударно-спусковий механізм', [['Курок', 'завдає удару по ударнику.'], ['Шептало', 'утримує курок на бойовому та запобіжному взводі.'], ['Спусковий гачок', 'спускає курок з бойового взводу та зводить його при стрільбі самозводом.'], ['Спускова тяга', 'спускає курок з бойового взводу та взводить його при натисканні на хвіст спускового гачка.'], ['Бойова пружина', 'приводить у дію курок, важіль взводу та спускову тягу.'], ['Засувка бойової пружини', 'кріпить бойову пружину до основи рукоятки.']]],
+  grip: ['Рукоятка з гвинтом', [['Рукоятка', 'для зручного утримання пістолета.'], ['Гвинт', 'кріпить рукоятку, бойову пружину та засувку бойової пружини до основи рукоятки.']]],
+  stop: ['Затворна затримка', [['Призначення', 'утримує затвор у крайньому задньому положенні після витрати всіх патронів.']]],
+  mag: ['Магазин', [['Призначення', 'вміщує 8 патронів; однорядний.']]],
+};
+const DIS = [
+  ['Від’єднати магазин від основи рукоятки.', 'mag'],
+  ['Перевірити відсутність патрона в патроннику: вимкнути запобіжник, відвести затвор назад і поставити на затворну затримку, оглянути патронник, натиснути на затримку й відпустити затвор.', 'check'],
+  ['Відтягнути спускову скобу вниз і вбік, відвести затвор у крайнє заднє положення, підняти його задню частину й відокремити від рамки. Повернути скобу на місце.', 'slide'],
+  ['Зняти зворотну пружину зі ствола.', 'spring'],
+  ['Доповісти про готовність.', 'report'],
+];
+const ASM = [
+  ['Надіти зворотну пружину на ствол кінцем, у якого крайній виток меншого діаметра.', 'spring'],
+  ['Приєднати затвор до рамки: ввести вільний кінець пружини в канал затвора, відвести затвор назад, щоб дульна частина ствола вийшла назовні, опустити затвор на рамку так, щоб виступи увійшли в пази.', 'slide'],
+  ['Увімкнути запобіжник.', 'safety'],
+  ['Вставити магазин в основу рукоятки до клацання засувки (бити долонею по магазину не можна).', 'mag'],
+  ['Перевірити збирання: вимкнути запобіжник, відвести й відпустити затвор, натиснути на затворну затримку, увімкнути запобіжник; курок має зірватися з бойового взводу й заблокуватися.', 'check2'],
+  ['Доповісти про готовність.', 'report'],
+];
+// spring + serrations
+{ let d = 'M196 167'; for (let x = 200, i = 0; x <= 540; x += 10, i++) d += ` L${x} ${i % 2 ? 152 : 182}`; $('#springpath').setAttribute('d', d);
+  $('#serr').innerHTML = Array.from({ length: 10 }, (_, i) => `<line x1="${116 + i * 6}" y1="150" x2="${116 + i * 6}" y2="188"/>`).join(''); }
+
+const G = id => document.getElementById(id);
+const pose = { mag: 'translate(470px,-6px)', slide: 'translate(40px,-116px) rotate(-2deg)', spring: 'translate(186px,270px)' };
+const setT = (el, t) => { el.style.transform = t || ''; };
+const msg = t => { G('svgmsg').textContent = t; };
+let busy = false;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function act(a, dir) {
+  busy = true;
+  const slide = G('g-slide'), ham = G('g-ham'), lev = G('safety-lever');
+  if (a === 'mag') { setT(G('g-mag'), dir === 'dis' ? pose.mag : ''); msg(dir === 'dis' ? 'Магазин від’єднано' : 'Магазин на місці'); await wait(700); }
+  if (a === 'check') { lev.style.transform = 'rotate(-28deg)'; await wait(300); setT(slide, 'translate(-40px,0)'); ham.style.transform = 'rotate(-35deg)'; msg('Патронник оглянуто: патрона немає'); await wait(1100); setT(slide, ''); await wait(700); }
+  if (a === 'slide' && dir === 'dis') { G('g-guard').style.transform = 'rotate(-10deg)'; await wait(400); setT(slide, 'translate(-40px,0)'); await wait(600); setT(slide, 'translate(-40px,0) rotate(5deg)'); await wait(500); setT(slide, pose.slide); await wait(800); G('g-guard').style.transform = ''; msg('Затвор відокремлено'); }
+  if (a === 'slide' && dir === 'asm') { setT(slide, 'translate(-40px,0) rotate(5deg)'); await wait(800); setT(slide, 'translate(-40px,0)'); await wait(500); setT(slide, ''); msg('Затвор приєднано'); await wait(700); }
+  if (a === 'spring') { setT(G('g-spring'), dir === 'dis' ? pose.spring : ''); msg(dir === 'dis' ? 'Пружину знято' : 'Пружину надіто на ствол'); await wait(800); }
+  if (a === 'safety') { lev.style.transform = ''; ham.style.transform = ''; msg('Запобіжник увімкнено'); await wait(500); }
+  if (a === 'check2') { lev.style.transform = 'rotate(-28deg)'; await wait(300); setT(slide, 'translate(-40px,0)'); ham.style.transform = 'rotate(-35deg)'; await wait(600); setT(slide, ''); await wait(600); lev.style.transform = ''; ham.style.transform = ''; msg('Курок зірвався з бойового взводу й заблокувався'); await wait(600); }
+  if (a === 'report') msg(dir === 'dis' ? 'Неповне розбирання завершено' : 'Пістолет зібрано');
+  busy = false;
+}
+function setState(stripped) {
+  setT(G('g-mag'), stripped ? pose.mag : ''); setT(G('g-slide'), stripped ? pose.slide : ''); setT(G('g-spring'), stripped ? pose.spring : '');
+  G('g-ham').style.transform = ''; G('safety-lever').style.transform = ''; msg('');
+}
+
+let mode = 'parts', sel = null, seq = null, pos = 0, check = false, errs = 0, t0 = 0;
+const ZOOM = { frame: ['g-barrel', 'g-frame', 'g-guard'], slide: ['g-slide'], spring: ['g-spring'], usm: ['g-usm'], grip: ['g-grip'], stop: ['g-stop'], mag: ['g-mag'] };
+function selPart(k) {
+  sel = k; document.querySelectorAll('#pm .part').forEach(g => g.classList.toggle('sel', g.dataset.part === k));
+  if (mode !== 'parts') return;
+  const [name, rows] = PARTS[k];
+  const ids = ZOOM[k]; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  ids.forEach(id => { const b = G(id).getBBox(); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height); });
+  const pd = 12;
+  $('#info').innerHTML = `<svg class="zoom" viewBox="${x0 - pd} ${y0 - pd} ${x1 - x0 + 2 * pd} ${y1 - y0 + 2 * pd}" aria-hidden="true">${ids.map(id => `<use href="#${id}"/>`).join('')}</svg><h3>${name}</h3><dl>${rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl>`;
+}
+function renderParts() {
+  $('#pane').innerHTML = `<p class="muted">Пістолет складається з 7 основних частин і механізмів. Натисніть на частину на схемі або в списку.</p><div class="chips">${Object.entries(PARTS).map(([k, v]) => `<button data-k="${k}">${v[0]}</button>`).join('')}</div><div id="info"></div>`;
+  $('#pane').querySelectorAll('.chips button').forEach(b => b.onclick = () => selPart(b.dataset.k));
+  selPart(sel || 'slide');
+}
+function renderSeq() {
+  const list = seq;
+  const done = pos >= list.length;
+  let opts = '';
+  if (check && !done) { const idx = list.map((_, i) => i).sort((a, b) => ((a * 7 + pos * 3) % 5) - ((b * 7 + pos * 3) % 5)); opts = `<div class="opts">${idx.map(i => `<button data-i="${i}">${list[i][0]}</button>`).join('')}</div>`; }
+  $('#pane').innerHTML = `<div class="seg"><button id="sm1" class="${check ? '' : 'on'}">Навчання</button><button id="sm2" class="${check ? 'on' : ''}">Перевірка</button><button id="rst">Почати знову</button></div>` +
+    (check ? `<p class="muted">Обирайте наступну дію. Помилок: <b>${errs}</b></p>` : '') +
+    `<ol class="steps">${list.map((s, i) => `<li class="${i < pos ? 'done' : i === pos ? 'cur' : ''}">${check && i >= pos ? '<span class="muted">…</span>' : s[0]}</li>`).join('')}</ol>` +
+    `<p class="msg" id="smsg"></p>` +
+    (done ? `<p class="msg good">Готово${check ? ` за ${((Date.now() - t0) / 1000).toFixed(1)} с, помилок: ${errs}` : ''}.</p>` : check ? opts : `<button class="pri" id="next">Виконати крок ${pos + 1}</button>`);
+  $('#sm1').onclick = () => { check = false; restart(); };
+  $('#sm2').onclick = () => { check = true; restart(); };
+  $('#rst').onclick = restart;
+  const nx = $('#next'); if (nx) nx.onclick = step;
+  $('#pane').querySelectorAll('.opts button').forEach(b => b.onclick = () => {
+    if (busy) return;
+    if (+b.dataset.i === pos) step(); else { errs++; renderSeq(); $('#smsg').textContent = 'Не той крок. Подумайте, що має бути раніше.'; $('#smsg').className = 'msg bad'; }
+  });
+}
+const HL = { mag: 'mag', slide: 'slide', spring: 'spring', check: 'slide', check2: 'usm', safety: 'slide' };
+async function step() { if (busy) return; const s = seq[pos]; pos++; renderSeq(); document.querySelectorAll('#pm .part').forEach(g => g.classList.toggle('sel', g.dataset.part === HL[s[1]])); await act(s[1], mode); document.querySelectorAll('#pm .part').forEach(g => g.classList.remove('sel')); renderSeq(); }
+function restart() { pos = 0; errs = 0; t0 = Date.now(); setState(mode === 'asm'); renderSeq(); }
+function setMode(m) {
+  mode = m; ['parts', 'dis', 'asm'].forEach(x => G('m-' + x).classList.toggle('on', x === m));
+  document.querySelectorAll('#pm .part').forEach(g => g.classList.remove('sel'));
+  if (m === 'parts') { setState(false); renderParts(); } else { seq = m === 'dis' ? DIS : ASM; restart(); }
+}
+G('m-parts').onclick = () => setMode('parts'); G('m-dis').onclick = () => setMode('dis'); G('m-asm').onclick = () => setMode('asm');
+document.querySelectorAll('#pm .part').forEach(g => g.addEventListener('click', () => { if (mode !== 'parts') setMode('parts'); selPart(g.dataset.part); }));
+
+// ---- vohneva
+const TTX = [['9 мм', 'калібр, патрон 9×18'], ['730 г', 'маса без патронів'], ['810 г', 'маса зі спорядженим магазином'], ['8', 'патронів у магазині'], ['315 м/с', 'початкова швидкість кулі'], ['до 50 м', 'ефективна дальність вогню'], ['30 п/хв', 'бойова скорострільність'], ['350 м', 'убивча сила кулі зберігається до'], ['161 мм', 'довжина пістолета'], ['93 мм', 'довжина ствола']];
+$('#ttx').innerHTML = TTX.map(t => `<div><b>${t[0]}</b><span>${t[1]}</span></div>`).join('');
+const PROG = [['1. Заходи безпеки', 'Правила поводження зі зброєю, порядок на стрільбищі', 'Залік із заходів безпеки'], ['2. Матеріальна частина', 'Будова, призначення частин, неповне розбирання і збирання, догляд', 'Розбирання і збирання без помилок'], ['3. Основи стрільби', 'Явище пострілу, траєкторія, прицілювання, затримки', 'Відповіді на контрольні питання'], ['4. Прийоми', 'Хват, стійки, вихоплювання, заряджання, спуск, тренування без набоїв', 'Стабільне утримання рівної мушки'], ['5. Виконання вправ', 'Стрільба по нерухомих, а згодом по рухомих і тих, що з’являються, цілях', 'Виконання нормативів кафедри'], ['6. Ускладнені умови', 'Обмежений час, фізичне навантаження, зміна положень, погане освітлення', 'Стабільність за стресу']];
+$('#prog').innerHTML = PROG.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+function gunIco(kind) {
+  const back = [0, 7, 15, 9, 0][kind];
+  const slide = `<g transform="translate(${-back} 0)"><rect x="12" y="10" width="78" height="16" rx="3" fill="#3a414e"/><rect x="54" y="13" width="14" height="6" rx="1" fill="#161a20"/></g>`;
+  const frame = `<rect x="14" y="26" width="72" height="6" rx="2" fill="#2a2f38"/><path d="M18 30H36L31 54H13Z" fill="#3b2a21"/><path d="M40 32Q40 44 52 44Q62 44 62 32" fill="none" stroke="#2a2f38" stroke-width="3"/>`;
+  const ham = `<path d="M12 12Q4 12 4 18L12 22Z" fill="#2a2f38"/>`;
+  const extra = [
+    `<path d="M92 9L102 19M102 9L92 19" stroke="#e0412f" stroke-width="3"/>`,
+    `<path d="M93 18H108M102 13L108 18L102 23" stroke="#e0412f" stroke-width="2.5" fill="none"/><rect x="${90 - back}" y="12" width="${back}" height="12" fill="#d6a640"/>`,
+    `<rect x="56" y="16" width="20" height="7" rx="3" fill="#d6a640" transform="rotate(-18 66 19)"/>`,
+    `<rect x="57" y="3" width="8" height="15" rx="2" fill="#d6a640" transform="rotate(14 61 10)"/>`,
+    `<g fill="#e0412f"><rect x="94" y="15" width="7" height="4" rx="2"/><rect x="104" y="15" width="7" height="4" rx="2"/><rect x="114" y="15" width="7" height="4" rx="2"/></g>`,
+  ][kind];
+  return `<svg class="ico" viewBox="0 0 124 60" aria-hidden="true">${frame}${ham}${slide}${extra}</svg>`;
+}
+const ZATR = [['Осічка', 'Курок спущений, пострілу немає', 'Перезарядити й продовжити стрільбу; після стрільби оглянути й почистити пістолет'], ['Недокриття патрона затвором', 'Затвор не дійшов до переднього положення', 'Дослати затвор рукою й продовжити; почистити пістолет'], ['Неподача патрона', 'Затвор зупинився з патроном посередині', 'Перезарядити й продовжити; почистити магазин, несправний замінити'], ['Защемлення гільзи', 'Гільза застрягла між затвором і казенним зрізом ствола', 'Витягнути гільзу й продовжити; якщо повторюється, пістолет до майстерні'], ['Автоматична стрільба', 'Пістолет стріляє чергою', 'Припинити стрільбу; оглянути й почистити, пістолет до майстерні']];
+$('#zatr').innerHTML = ZATR.map((r, i) => `<tr><td>${gunIco(i)}</td>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('');
+
+// ---- sight pictures
+const SIGHTS = [
+  ['Рівна мушка', 'Вершина мушки посередині прорізу цілика, врівень з його верхніми краями.', 0, 0, 0, 0, 1],
+  ['Крупна мушка', 'Мушка виступає над краями цілика: влучення вище точки прицілювання.', 0, -12, 0, -1, 0],
+  ['Дрібна мушка', 'Мушка нижче країв цілика: влучення нижче.', 0, 12, 0, 1, 0],
+  ['Мушка ліворуч', 'Мушка зміщена до лівого краю прорізу: влучення ліворуч.', -9, 0, -1, 0, 0],
+  ['Мушка праворуч', 'Мушка зміщена до правого краю прорізу: влучення праворуч.', 9, 0, 1, 0, 0],
+];
+G('sights').innerHTML = SIGHTS.map(([t, d, dx, dy, hx, hy, ok]) => `<div class="card${ok ? ' ok' : ''}"><svg viewBox="0 0 300 130" aria-hidden="true">
+  <rect width="300" height="130" rx="10" fill="#e8eef7"/>
+  <circle cx="230" cy="62" r="46" fill="#fff" stroke="#10223d" stroke-width="2"/><circle cx="230" cy="62" r="30" fill="none" stroke="#10223d" stroke-width="1.5"/><circle cx="230" cy="62" r="14" fill="#10223d"/>
+  <circle cx="${230 + hx * 28}" cy="${62 + hy * 28}" r="6" fill="${ok ? '#5fd08f' : '#e0412f'}" stroke="#fff" stroke-width="2"/>
+  <rect x="${76 + dx}" y="${54 + dy}" width="14" height="70" fill="#20252d"/>
+  <path d="M10 54H150V118H10ZM70 54V80Q70 84 74 84H92Q96 84 96 80V54Z" fill="#3a414e" fill-rule="evenodd"/>
+  <line x1="10" y1="54" x2="150" y2="54" stroke="${ok ? '#5fd08f' : '#ffd23f'}" stroke-width="1.5" stroke-dasharray="4 3"/>
+</svg><h3>${t}</h3><p>${d}</p></div>`).join('');
+
+// ---- game & levels
+const W8 = [{ n: 'ПМ', v: 315, m: 8, eff: 50 }, { n: 'АКМ', v: 715, m: 30, eff: 800 }, { n: 'АК-74', v: 900, m: 30, eff: 1000 }];
+const DIFF = [{ n: 'Навчальний', V: [5, 12], D: [18, 40], hint: 1, obl: 0 }, { n: 'Стандартний', V: [6, 18], D: [18, 48], hint: null, obl: 0 }, { n: 'Складний', V: [10, 26], D: [22, 50], hint: 0, obl: 1 }];
+const DRAG = 1.08, TIS = 2 * Math.PI / 6000;
+const fx2 = (x, n = 2) => x.toFixed(n).replace('.', ',');
+let wi = 0, di = 1, best = 0, cwi = 0;
+try { best = +localStorage.getItem('pm-best') || 0; } catch (e) {}
+const cv = G('cv'), cx = cv.getContext('2d');
+let Wd = 0, Ht = 0, F = 1, drones = [], shots = [], fx = [], st = null, last = 0, spawnT = 0, mouse = null, clock = 0;
+const rnd = (a, b) => a + Math.random() * (b - a);
+function resize() { const r = cv.getBoundingClientRect(); if (!r.width) return; const dpr = Math.min(2, devicePixelRatio || 1); Wd = r.width; Ht = r.height; cv.width = Wd * dpr; cv.height = Ht * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); const fov = (Wd < 600 ? 14 : 24) * Math.PI / 180; F = Wd / (2 * Math.tan(fov / 2)); }
+const roG = new ResizeObserver(() => { resize(); if (!st || !st.run) draw(); }); roG.observe(cv);
+function segBtns(id, arr, cur, lab, cb) { const el = G(id); el.innerHTML = arr.map((w, i) => `<button data-i="${i}" class="${i === cur ? 'on' : ''}">${lab(w)}</button>`).join(''); el.querySelectorAll('button').forEach(b => b.onclick = () => cb(+b.dataset.i)); }
+function weapBtns() { segBtns('weap', W8, wi, w => `${w.n} · ${w.v} м/с`, i => { if (st && st.run) return; wi = i; weapBtns(); hud(); }); }
+function diffBtns() { segBtns('diff', DIFF, di, d => d.n, i => { if (st && st.run) return; di = i; diffBtns(); const h = DIFF[di].hint; const cb = G('hint'); if (h !== null) cb.checked = !!h; cb.disabled = h !== null; draw(); }); }
+function newGame() {
+  st = { run: true, t: 60, hit: 0, shot: 0, ammo: W8[wi].m, rel: 0, react: [], err: [], miss: 0 };
+  drones = []; shots = []; fx = []; spawnT = 0; clock = 0; G('over').hidden = true; G('feed').textContent = ''; G('stats').innerHTML = ''; hud(); last = performance.now(); requestAnimationFrame(loop);
+}
+function hud() { G('hT').textContent = Math.ceil(st ? st.t : 60); G('hH').textContent = st ? st.hit : 0; G('hS').textContent = st ? st.shot : 0; G('hA').textContent = st && st.run ? (st.rel > 0 ? '…' : st.ammo) : W8[wi].m; G('hB').textContent = best; }
+function spawn() {
+  const P = DIFF[di], dir = Math.random() < .5 ? 1 : -1, D = rnd(...P.D), V = rnd(...P.V);
+  const th = P.obl ? rnd(35, 90) * Math.PI / 180 : Math.PI / 2;
+  const halfW = Wd / 2 / F * D;
+  drones.push({ D, V: V * Math.sin(th) * dir, Vr: -V * Math.cos(th), s: -dir * (halfW + 1), y: rnd(.12, .55) * Ht, ph: rnd(0, 6), dead: 0, born: clock, shotAt: 0 });
+}
+const sx = d => Wd / 2 + d.s / d.D * F;
+function fire(mx, my) {
+  if (!st || !st.run || st.rel > 0) return;
+  if (st.ammo <= 0) { feed('Магазин порожній: перезарядіть (R).', 'bad'); return; }
+  st.ammo--; st.shot++;
+  let tgt = null, bd = 1e9; for (const d of drones) { if (d.dead) continue; const dd = Math.abs(d.y - my) + Math.abs(sx(d) - mx) * .15; if (dd < bd) { bd = dd; tgt = d; } }
+  if (tgt && !tgt.shotAt) { tgt.shotAt = 1; st.react.push(clock - tgt.born); }
+  const tof = (tgt ? tgt.D : 35) / W8[wi].v * DRAG;
+  shots.push({ mx, my, left: tof, tof, tgt });
+  if (st.ammo === 0) feed('Останній набій. Перезарядіть.', '');
+  hud();
+}
+function resolve(sh) {
+  const d = sh.tgt;
+  if (!d || d.dead) { st.miss++; feed('Промах.', 'bad'); fx.push({ x: sh.mx, y: sh.my, r: 10, life: .4, c: '#ffffff' }); return; }
+  const size = 0.4 / d.D * F, dx = sx(d) - sh.mx, dy = d.y - sh.my;
+  const errM = dx / F * d.D * Math.sign(d.V || 1); // >0: куля позаду дрона
+  if (Math.abs(dy) < size * 2 + 20) st.err.push(errM);
+  if (Math.abs(dx) <= size * .75 + 3 && Math.abs(dy) <= size * .6 + 4) { d.dead = 1; d.vy = 0; st.hit++; feed(`Влучання! Дальність ${d.D.toFixed(0)} м, поперечна швидкість ${Math.abs(d.V).toFixed(0)} м/с.`, 'good'); fx.push({ x: sx(d), y: d.y, r: 22, life: .5, c: '#ffd23f' }); }
+  else { feed(`Промах: куля пройшла ${errM > 0 ? 'позаду' : 'попереду'} дрона приблизно на ${fx2(Math.abs(errM), 1)} м.`, 'bad'); fx.push({ x: sh.mx, y: sh.my, r: 10, life: .4, c: '#ffffff' }); }
+  hud();
+}
+function feed(t, c) { const f = G('feed'); f.textContent = t; f.className = 'msg ' + (c === 'good' ? 'good' : c === 'bad' ? 'bad' : ''); }
+function summary() {
+  const s = st, acc = s.shot ? s.hit / s.shot * 100 : 0, rt = s.react.length ? s.react.reduce((a, b) => a + b, 0) / s.react.length : 0;
+  const per = s.hit ? s.shot / s.hit : 0, me = s.err.length ? s.err.reduce((a, b) => a + b, 0) / s.err.length : 0;
+  const tip = !s.err.length ? '' : me > .3 ? 'Куля здебільшого проходила позаду: виносьте точку прицілювання далі вперед.' : me < -.3 ? 'Куля здебільшого проходила попереду: зменште упередження.' : 'Упередження в середньому правильне; працюйте над стабільністю.';
+  G('stats').innerHTML = `<h3>Показники сесії</h3><div class="scroll"><table><tbody>
+    <tr><td>Частка влучень</td><td class="n">${fx2(acc, 0)} %</td></tr>
+    <tr><td>Середній час реакції (поява дрона - перший постріл)</td><td class="n">${s.react.length ? fx2(rt, 1) + ' с' : '-'}</td></tr>
+    <tr><td>Витрата набоїв на одне ураження</td><td class="n">${s.hit ? fx2(per, 1) : '-'}</td></tr>
+    <tr><td>Середня помилка упередження</td><td class="n">${s.err.length ? (me > 0 ? 'позаду ' : 'попереду ') + fx2(Math.abs(me), 1) + ' м' : '-'}</td></tr>
+  </tbody></table></div><p class="muted">${tip} Показники відповідають критеріям оцінювання індивідуального рівня методики.</p>`;
+  G('ovTitle').textContent = `Результат: ${s.hit} з ${s.shot}`;
+  G('ovText').textContent = s.shot ? `Влучність ${fx2(acc, 0)} %. ${tip}` : 'Пострілів не було.';
+}
+function loop(now) {
+  if (!st || !st.run) return;
+  const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
+  st.t -= dt; if (st.rel > 0) { st.rel -= dt; if (st.rel <= 0) { st.ammo = W8[wi].m; hud(); } }
+  spawnT -= dt; if (spawnT <= 0) { spawn(); spawnT = rnd(1.3, 2.4); }
+  for (const d of drones) { if (d.dead) { d.vy += 300 * dt; d.y += d.vy * dt; d.dead += dt; } else { d.s += d.V * dt; d.D = Math.max(10, d.D + d.Vr * dt); d.ph += dt * 3; } }
+  drones = drones.filter(d => d.y < Ht + 40 && Math.abs(sx(d) - Wd / 2) < Wd / 2 + 80);
+  for (const sh of shots) { sh.left -= dt; if (sh.left <= 0 && !sh.done) { sh.done = 1; resolve(sh); } }
+  shots = shots.filter(s => !s.done);
+  fx.forEach(f => f.life -= dt); fx = fx.filter(f => f.life > 0);
+  if (st.t <= 0) { st.run = false; st.t = 0; if (st.hit > best) { best = st.hit; try { localStorage.setItem('pm-best', best); } catch (e) {} } summary(); hud(); G('start').textContent = 'Ще раз'; G('over').hidden = false; }
+  if (Math.random() < .1) hud();
+  draw(); if (st.run) requestAnimationFrame(loop);
+}
+function drone(x, y, s, ph, dead) {
+  cx.save(); cx.translate(x, y); if (dead) cx.rotate(dead * 4);
+  cx.fillStyle = '#20252d'; cx.strokeStyle = '#20252d'; cx.lineWidth = Math.max(1.5, s * .08);
+  cx.beginPath(); cx.moveTo(-s * .5, -s * .08); cx.lineTo(s * .5, -s * .08); cx.stroke();
+  cx.fillRect(-s * .2, -s * .12, s * .4, s * .22); cx.fillStyle = '#c94a2c'; cx.fillRect(-s * .12, s * .1, s * .24, s * .12);
+  cx.fillStyle = 'rgba(30,34,42,.45)'; for (const k of [-1, 1]) { cx.beginPath(); cx.ellipse(k * s * .5, -s * .14, s * .3 * Math.abs(Math.cos(ph * 9 + k)) + 2, s * .05 + 1, 0, 0, 7); cx.fill(); }
+  cx.restore();
+}
+function draw() {
+  if (!Wd) return;
+  const g = cx.createLinearGradient(0, 0, 0, Ht); g.addColorStop(0, '#5d9be0'); g.addColorStop(.75, '#bfe0f7'); cx.fillStyle = g; cx.fillRect(0, 0, Wd, Ht);
+  cx.fillStyle = 'rgba(255,255,255,.7)'; for (let i = 0; i < 5; i++) { const x = (i * 237 + 60) % Wd, y = 30 + (i * 53) % (Ht * .35); cx.beginPath(); cx.ellipse(x, y, 60, 14, 0, 0, 7); cx.ellipse(x + 34, y - 8, 36, 14, 0, 0, 7); cx.fill(); }
+  cx.fillStyle = '#4f7a4a'; cx.beginPath(); cx.moveTo(0, Ht); for (let x = 0; x <= Wd; x += 20) cx.lineTo(x, Ht * .8 - 14 * Math.sin(x / 70) - 8 * Math.sin(x / 23)); cx.lineTo(Wd, Ht); cx.fill();
+  cx.fillStyle = '#365834'; cx.fillRect(0, Ht * .9, Wd, Ht * .1);
+  const w = W8[wi], hint = G('hint').checked;
+  for (const sh of shots) { const k = 1 - sh.left / sh.tof, x0 = Wd / 2, y0 = Ht; cx.strokeStyle = 'rgba(255,190,60,.95)'; cx.lineWidth = 2.5; cx.beginPath(); cx.moveTo(x0 + (sh.mx - x0) * Math.max(0, k - .25), y0 + (sh.my - y0) * Math.max(0, k - .25)); cx.lineTo(x0 + (sh.mx - x0) * k, y0 + (sh.my - y0) * k); cx.stroke(); }
+  for (const d of drones) {
+    const x = sx(d), s = Math.max(10, 0.4 / d.D * F) * 1.6, by = d.y + Math.sin(d.ph) * 2;
+    if (hint && !d.dead) { const lead = d.V / w.v * DRAG * F; cx.setLineDash([4, 4]); cx.strokeStyle = '#ffd23f'; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(x, by); cx.lineTo(x + lead, by); cx.stroke(); cx.setLineDash([]); cx.beginPath(); cx.arc(x + lead, by, Math.max(6, s * .35), 0, 7); cx.stroke(); }
+    drone(x, by, s, d.ph, d.dead);
+    if (!d.dead) { cx.font = '12px Golos Text, sans-serif'; cx.fillStyle = '#10223d'; cx.fillText(`${d.D.toFixed(0)} м`, x - 12, by + s * .55 + 12); }
+  }
+  for (const f of fx) { cx.strokeStyle = f.c; cx.lineWidth = 3; cx.beginPath(); cx.arc(f.x, f.y, f.r * (1.4 - f.life), 0, 7); cx.stroke(); }
+  if (mouse && st && st.run) { cx.strokeStyle = '#10223d'; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(mouse.x, mouse.y, 9, 0, 7); cx.moveTo(mouse.x - 15, mouse.y); cx.lineTo(mouse.x - 5, mouse.y); cx.moveTo(mouse.x + 5, mouse.y); cx.lineTo(mouse.x + 15, mouse.y); cx.moveTo(mouse.x, mouse.y - 15); cx.lineTo(mouse.x, mouse.y - 5); cx.moveTo(mouse.x, mouse.y + 5); cx.lineTo(mouse.x, mouse.y + 15); cx.stroke(); }
+}
+cv.addEventListener('pointerdown', e => { const r = cv.getBoundingClientRect(); fire(e.clientX - r.left, e.clientY - r.top); });
+cv.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const r = cv.getBoundingClientRect(); mouse = { x: e.clientX - r.left, y: e.clientY - r.top }; });
+cv.addEventListener('pointerleave', () => { mouse = null; });
+function reload() { if (st && st.run && st.rel <= 0) { st.rel = 1.5; hud(); feed('Перезарядження…', ''); } }
+G('reload').onclick = reload;
+addEventListener('keydown', e => { if ('rRкК'.includes(e.key) && location.hash === '#bpla') reload(); });
+G('start').onclick = newGame;
+G('hint').onchange = () => { if (!st || !st.run) draw(); };
+function demo() { if (!Wd) return; drones = [{ D: 25, V: 12, Vr: 0, s: -2, y: Ht * .3, ph: 0, dead: 0 }, { D: 40, V: -9, Vr: 0, s: 3, y: Ht * .5, ph: 1, dead: 0 }]; draw(); }
+
+// level 1: calculator
+const PRE = [['ПМ, 20 м/с, 25 м', 0, 20, 25, 90], ['АК-74: FPV 30 м/с, 80 м', 2, 30, 80, 90], ['АКМ: розвідник 8 м/с, 150 м', 1, 8, 150, 90], ['FPV летить на стрільця', 2, 30, 60, 10]];
+function calc() {
+  const w = W8[cwi], V = +G('rV').value, D = +G('rD').value, A = +G('rA').value;
+  const Vp = V * Math.sin(A * Math.PI / 180), t = D / w.v, L = Vp * t, phi = Vp / w.v;
+  G('oV').textContent = `${V} м/с (${Math.round(V * 3.6)} км/год)`; G('oD').textContent = `${D} м`; G('oA').textContent = `${A}°`;
+  G('cL').textContent = fx2(L); G('cPhi').textContent = (phi / TIS).toFixed(0); G('cN').textContent = fx2(L / .4, 1); G('cT').textContent = fx2(t, 3);
+  G('cWarn').textContent = D > w.eff ? `Дальність перевищує ефективну дальність вогню ${w.n} (${w.eff} м).` : '';
+  const S = G('sight'), R = 190, c = 210, span = Math.max(phi * 1.7, 1.6 / D, 0.008), k = R / span, ds = Math.max(4, .2 / D * k), dx = c - phi * k;
+  const rows = [];
+  for (let m = -120; m <= 120; m += 10) { const x = c + m * TIS * k; if (m && Math.abs(x - c) < R - 6) rows.push(`<line x1="${x}" y1="${c - (m % 20 ? 5 : 10)}" x2="${x}" y2="${c + (m % 20 ? 5 : 10)}" stroke="#10223d" stroke-width="1.3"/>`); }
+  S.innerHTML = `<defs><clipPath id="cl"><circle cx="${c}" cy="${c}" r="${R}"/></clipPath><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d9be0"/><stop offset="1" stop-color="#cfe7f8"/></linearGradient></defs>
+    <g clip-path="url(#cl)"><rect width="420" height="420" fill="url(#sk)"/><path d="M0 340Q105 312 210 332T420 326V420H0Z" fill="#4f7a4a"/>
+    <line x1="${c}" y1="${c - R}" x2="${c}" y2="${c + R}" stroke="#10223d" stroke-width="1.3"/><line x1="${c - R}" y1="${c}" x2="${c + R}" y2="${c}" stroke="#10223d" stroke-width="1.3"/>${rows.join('')}
+    ${phi * k > ds + 6 ? `<line x1="${dx + ds + 4}" y1="${c - ds - 10}" x2="${c - 8}" y2="${c - ds - 10}" stroke="#e0412f" stroke-width="2.5" stroke-dasharray="6 4"/><path d="M${c - 8} ${c - ds - 16}L${c} ${c - ds - 10}L${c - 8} ${c - ds - 4}Z" fill="#e0412f"/>` : ''}
+    <g transform="translate(${dx} ${c})"><rect x="${-ds}" y="${-ds * .22}" width="${2 * ds}" height="${ds * .14 + 1.5}" fill="#20252d"/><rect x="${-ds * .4}" y="${-ds * .3}" width="${ds * .8}" height="${ds * .5}" fill="#20252d"/><rect x="${-ds * .24}" y="${ds * .2}" width="${ds * .48}" height="${ds * .22}" fill="#c94a2c"/><ellipse cx="${-ds}" cy="${-ds * .3}" rx="${ds * .45}" ry="${ds * .08 + 1}" fill="rgba(30,34,42,.4)"/><ellipse cx="${ds}" cy="${-ds * .3}" rx="${ds * .45}" ry="${ds * .08 + 1}" fill="rgba(30,34,42,.4)"/></g>
+    <circle cx="${c}" cy="${c}" r="6" fill="none" stroke="#e0412f" stroke-width="2.5"/></g>
+    <circle cx="${c}" cy="${c}" r="${R}" fill="none" stroke="#10223d" stroke-width="8"/>`;
+}
+function cwBtns() { segBtns('cW', W8, cwi, w => w.n, i => { cwi = i; cwBtns(); calc(); }); }
+cwBtns();
+G('pre').innerHTML = PRE.map((p, i) => `<button data-i="${i}">${p[0]}</button>`).join('');
+G('pre').querySelectorAll('button').forEach(b => b.onclick = () => { const p = PRE[+b.dataset.i]; cwi = p[1]; G('rV').value = p[2]; G('rD').value = p[3]; G('rA').value = p[4]; cwBtns(); calc(); });
+['rV', 'rD', 'rA'].forEach(id => G(id).oninput = calc);
+G('cmp').innerHTML = W8.map(w => { const t = 30 / w.v, L = 15 * t; return `<tr><td>${w.n}</td><td class="n">${w.v}</td><td class="n">${fx2(t, 3)}</td><td class="n">${fx2(L)}</td><td class="n">${(15 / w.v / TIS).toFixed(0)}</td><td class="n">${fx2(L / .4, 1)}</td></tr>`; }).join('');
+
+// level 3: sector
+G('cells').innerHTML = Array.from({ length: 100 }, () => '<i></i>').join('');
+function sec() {
+  const p = G('rp').value / 100, n = +G('rn').value, c = G('rc').value / 100;
+  G('op').textContent = `${G('rp').value} %`; G('on').textContent = n; G('oc').textContent = `${G('rc').value} %`;
+  const Pn = k => c * p + (1 - c) * (1 - (1 - p) ** k), P = Pn(n);
+  G('sP').textContent = fx2(P * 100, 0); G('sP1').textContent = fx2(p * 100, 0); G('sG').textContent = fx2(P / p, 1);
+  G('bars').innerHTML = [1, 2, 3, 4, 5, 6].map(k => { const v = Pn(k); return `<div class="bar${k === n ? ' cur' : ''}"><span>${k}</span><div><i style="width:${(v * 100).toFixed(1)}%"></i></div><b>${fx2(v * 100, 0)} %</b></div>`; }).join('');
+}
+let simT = null;
+function simulate() {
+  const p = G('rp').value / 100, n = +G('rn').value, c = G('rc').value / 100, cells = [...G('cells').children];
+  cells.forEach(x => x.className = ''); clearInterval(simT); let i = 0, h = 0;
+  simT = setInterval(() => {
+    for (let j = 0; j < 5 && i < 100; j++, i++) { let ok; if (Math.random() < c) ok = Math.random() < p; else { ok = false; for (let k = 0; k < n; k++) if (Math.random() < p) ok = true; } if (ok) h++; cells[i].className = ok ? 'h' : 'm'; }
+    G('sE').textContent = String(Math.round(h / i * 100));
+    if (i >= 100) clearInterval(simT);
+  }, 30);
+}
+['rp', 'rn', 'rc'].forEach(id => G(id).oninput = sec);
+G('sim').onclick = simulate;
+
+// drone types to scale
+{
+  const M = 90, GY = 230; let x = 30; const parts = [];
+  const grid = Array.from({ length: 10 }, (_, i) => `<line x1="20" y1="${GY - i * M / 2}" x2="950" y2="${GY - i * M / 2}" stroke="var(--line)" stroke-width="${i % 2 ? .6 : 1.2}"/>`).join('') + `<text x="22" y="${GY - 2 * M - 6}" font-size="13" fill="var(--mute)" font-family="Golos Text">2 м</text><text x="22" y="${GY - M - 6}" font-size="13" fill="var(--mute)" font-family="Golos Text">1 м</text>`;
+  const items = [
+    ['Людина', 0.5, w => `<g transform="translate(${x + w / 2} ${GY})"><circle cy="-148" r="12" fill="#5b6575"/><path d="M-20 -132H20L24 -70H14L10 0H2L0 -60L-2 0H-10L-14 -70H-24Z" fill="#5b6575"/></g>`],
+    ['FPV-дрон', 0.3, w => `<g transform="translate(${x + w / 2} ${GY - 60})"><rect x="-${w / 2}" y="-3" width="${w}" height="3" fill="#20252d"/><rect x="-6" y="-7" width="12" height="9" fill="#c94a2c"/><rect x="-${w / 2 + 2}" y="-7" width="10" height="2" fill="#20252d"/><rect x="${w / 2 - 8}" y="-7" width="10" height="2" fill="#20252d"/></g>`],
+    ['Розвідувальний квадрокоптер', 0.35, w => `<g transform="translate(${x + w / 2} ${GY - 110})"><rect x="-${w / 2}" y="-3" width="${w}" height="3" fill="#7d8698"/><rect x="-8" y="-8" width="16" height="10" rx="3" fill="#9aa3ad"/><circle cy="6" r="3" fill="#20252d"/></g>`],
+    ['Ударний БпЛА літакового типу', 2.5, w => `<g transform="translate(${x + w / 2} ${GY - 150})"><path d="M-${w / 2} 0L0 -8L${w / 2} 0L0 6Z" fill="#6b7486"/><circle r="12" fill="#5b6473"/><rect x="-2" y="-30" width="4" height="22" fill="#5b6473"/></g>`],
+    ['Розвідувальний БпЛА літакового типу', 3, w => `<g transform="translate(${x + w / 2} ${GY - 190})"><rect x="-${w / 2}" y="-3" width="${w}" height="5" rx="2" fill="#7d8698"/><circle r="9" fill="#5b6473"/><path d="M-30 6L-38 24M30 6L38 24" stroke="#7d8698" stroke-width="3"/><circle cy="10" r="4" fill="#20252d"/></g>`],
+  ];
+  items.forEach(([n, m, f], i) => { const w = m * M; parts.push(f(w)); parts.push(`<text x="${x + w / 2}" y="${GY + 24}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Golos Text">${i ? m.toString().replace('.', ',') + ' м' : 'зріст 1,75 м'}</text>`); x += w + 46; });
+  G('scaleSvg').innerHTML = grid + `<line x1="20" y1="${GY}" x2="950" y2="${GY}" stroke="var(--ink)" stroke-width="2"/>` + parts.join('');
+  const T = [['FPV-дрон', '0,2-0,6 м; швидкість понад 100 км/год. Головна загроза для піхоти й найважча ціль: потрібне велике упередження.'], ['Розвідувальний квадрокоптер', '≈ 0,3-0,4 м; часто зависає або рухається повільно, тому з погляду упередження найпридатніший для стрілецької зброї.'], ['Ударний БпЛА літакового типу', 'Розмах ≈ 2,5 м. Для нього методичні рекомендації передбачають великокаліберні кулемети з ракурсними кільцями.'], ['Розвідувальний БпЛА літакового типу', 'Розмах ≈ 3 м; зазвичай летить високо, поза ефективною дальністю автомата чи пістолета.']];
+  G('types').innerHTML = T.map(t => `<div class="card"><h3>${t[0]}</h3><p>${t[1]}</p></div>`).join('');
+}
+
+// levels switch
+let lvl = 1;
+function setLvl(l) { lvl = l; [1, 2, 3].forEach(k => G('L' + k).hidden = k !== l); G('lvl').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === l)); if (l === 2) requestAnimationFrame(() => { resize(); if (!st || !st.run) demo(); }); }
+G('lvl').querySelectorAll('button').forEach(b => b.onclick = () => setLvl(+b.dataset.l));
+weapBtns(); diffBtns(); hud(); calc(); sec();
+window.claude?.hot?.snapshot?.(() => ({ wi, di, cwi, lvl }));
+
+// ---- quiz
+const Q = [
+  ['Скільки патронів уміщує магазин ПМ?', ['6', '8', '10', '12'], 1, 'Магазин однорядний, на 8 патронів.'],
+  ['Яка початкова швидкість кулі ПМ?', ['315 м/с', '715 м/с', '900 м/с', '450 м/с'], 0, '315 м/с, тому час польоту кулі відносно великий.'],
+  ['Яка ефективна дальність вогню з ПМ?', ['до 25 м', 'до 50 м', 'до 150 м', 'до 350 м'], 1, 'До 50 м; 350 м - це дальність, до якої зберігається вбивча сила кулі.'],
+  ['З чого починається неповне розбирання?', ['Зняти затвор', 'Від’єднати магазин', 'Зняти пружину', 'Вимкнути запобіжник'], 1, 'Спершу від’єднують магазин, потім перевіряють патронник.'],
+  ['Що роблять одразу після від’єднання магазина?', ['Знімають затвор', 'Перевіряють відсутність патрона в патроннику', 'Доповідають', 'Знімають рукоятку'], 1, 'Перевірка патронника - обов’язковий захід безпеки.'],
+  ['Яке призначення викидача?', ['Розбиває капсуль', 'Утримує гільзу в чашці затвора до зустрічі з відбивачем', 'Повертає затвор уперед', 'Утримує курок на взводі'], 1, 'Капсуль розбиває ударник, курок утримує шептало.'],
+  ['Що робить затворна затримка?', ['Утримує затвор у задньому положенні після витрати патронів', 'Блокує спуск', 'Тримає магазин', 'Кріпить рукоятку'], 0, 'Після останнього пострілу затвор зупиняється в задньому положенні.'],
+  ['Яким кінцем надівають зворотну пружину на ствол?', ['Будь-яким', 'Кінцем, у якого крайній виток меншого діаметра', 'Кінцем, у якого виток більшого діаметра', 'Пружину не знімають'], 1, 'Так указано в порядку збирання.'],
+  ['На якому принципі працює автоматика ПМ?', ['Відведення порохових газів', 'Віддачі вільного затвора', 'Короткого ходу ствола', 'Ручного перезаряджання'], 1, 'ПМ має вільний затвор.'],
+  ['Як правильно вставляти магазин?', ['Сильним ударом долоні', 'До клацання засувки, не б’ючи долонею', 'Лише при знятому затворі', 'При вимкненому запобіжнику'], 1, 'Бити долонею по магазину не дозволяється.'],
+  ['Осічка під час стрільби: що робити?', ['Розібрати пістолет на рубежі', 'Перезарядити й продовжити стрільбу', 'Замінити бойову пружину', 'Подивитися в ствол'], 1, 'Перезарядити, тримаючи зброю в бік цілей; огляд і чистка - після стрільби.'],
+  ['Від чого насамперед залежить кутове упередження під час стрільби по дрону?', ['Від дальності до дрона', 'Від відношення поперечної швидкості дрона до швидкості кулі', 'Від маси пістолета', 'Від висоти польоту'], 1, 'φ ≈ V⊥ / v₀; дальність у першому наближенні не впливає.'],
+  ['Дрон летить прямо на стрільця. Яке потрібне бокове упередження?', ['Максимальне', 'Майже нульове', 'Дорівнює дальності', 'Дві фігури дрона'], 1, 'Поперечна складова швидкості V⊥ = V · sin θ близька до нуля.'],
+  ['Чому три стрільці в секторі відбивають атаку не втричі частіше за одного?', ['Через віддачу', 'Помилки в оцінці руху цілі в них частково спільні', 'Через нестачу набоїв', 'Насправді рівно втричі'], 1, 'Корельовані помилки зменшують виграш, тому формула для незалежних стрільців дає верхню оцінку.'],
+  ['Чому по дрону з ПМ треба виносити точку прицілювання далі, ніж з АК-74?', ['ПМ важчий', 'Куля ПМ повільніша, довше летить', 'У ПМ коротший ствол', 'Через віддачу'], 1, 'Кутове упередження ≈ V / v₀: менша v₀ - більше упередження.'],
+];
+let qi = 0, qs = 0, qa = false;
+function renderQ() {
+  const c = G('qcard');
+  if (qi >= Q.length) { c.innerHTML = `<p class="q">Результат: ${qs} з ${Q.length}</p><p>${qs >= 10 ? 'Відмінно.' : qs >= 7 ? 'Добре, перегляньте помилки.' : 'Варто ще раз пройти розділ «Будова і розбирання».'}</p><button class="pri" id="qr">Пройти знову</button>`; G('qr').onclick = () => { qi = 0; qs = 0; renderQ(); }; return; }
+  const [q, o0, k0, ex] = Q[qi]; qa = false; const ord = o0.map((_, i) => i).sort(() => Math.random() - .5); const o = ord.map(i => o0[i]), k = ord.indexOf(k0);
+  c.innerHTML = `<p class="muted">Питання ${qi + 1} з ${Q.length} · правильних: ${qs}</p><p class="q">${q}</p><div class="opts">${o.map((t, i) => `<button data-i="${i}">${t}</button>`).join('')}</div><p class="msg" id="qm"></p><button id="qn" hidden class="pri">Далі</button>`;
+  c.querySelectorAll('.opts button').forEach(b => b.onclick = () => { if (qa) return; qa = true; const ok = +b.dataset.i === k; if (ok) qs++; b.style.borderColor = ok ? 'var(--ok)' : 'var(--red)'; c.querySelectorAll('.opts button')[k].style.borderColor = 'var(--ok)'; G('qm').textContent = (ok ? 'Правильно. ' : 'Ні. ') + ex; G('qm').className = 'msg ' + (ok ? 'good' : 'bad'); G('qn').hidden = false; });
+  G('qn').onclick = () => { qi++; renderQ(); };
+}
+renderQ();
+
+// ---- routing
+const VIEWS = ['budova', 'vohneva', 'bpla', 'test'];
+function route() {
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'budova';
+  VIEWS.forEach(x => G('v-' + x).hidden = x !== v);
+  document.querySelectorAll('#nav a').forEach(a => a.toggleAttribute('aria-current', a.getAttribute('href') === '#' + v));
+  document.querySelectorAll('#nav a[aria-current]').forEach(a => a.setAttribute('aria-current', 'page'));
+  if (v === 'bpla') setLvl(lvl);
+}
+addEventListener('hashchange', route);
+route(); setMode('parts');
+}
+</script>
+</body>
+</html>
