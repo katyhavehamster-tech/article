@@ -86,6 +86,10 @@ td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .trio div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .trio b{display:block;font-family:Unbounded,sans-serif;font-size:20px;font-variant-numeric:tabular-nums}.trio span{font-size:13px;color:var(--mute)}
 .rng{display:block;margin:12px 0 4px;font-weight:600}.rng b{float:right;font-weight:600;color:var(--blue2)}
+.proto{display:flex;gap:10px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.proto input{width:22px;height:22px;margin-top:2px;flex:none}
+#dyn svg{display:block;width:100%;height:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;margin-top:8px}
+.locked button:not(.on){opacity:.45;cursor:not-allowed}
 #pid,#csvBox{width:100%;font:16px/1.4 "Golos Text",sans-serif;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 #csvBox{font-size:13px;margin-top:8px}
 input[type=range]{width:100%;height:32px;accent-color:var(--blue)}
@@ -316,6 +320,8 @@ footer{border-top:1px solid var(--line);margin-top:20px}
         </div>
       </div>
       <div class="panel">
+        <label class="proto" for="proto"><input type="checkbox" id="proto"> <span><b>Протокол апробації</b><br><span class="muted">5 сесій в однакових умовах: «Стандартний», ПМ, без підказки. Потрібен код учасника.</span></span></label>
+        <p class="msg" id="protoMsg"></p>
         <h3>Режим</h3>
         <div class="seg" id="diff"></div>
         <h3>Зброя</h3>
@@ -324,8 +330,9 @@ footer{border-top:1px solid var(--line);margin-top:20px}
         <p id="feed" class="msg"></p>
         <div id="stats"></div>
         <h3 style="margin-top:16px">Журнал сесій</h3>
-        <label for="pid" style="display:block;font-weight:600;margin-bottom:4px">Код учасника (необов’язково)</label>
+        <label for="pid" style="display:block;font-weight:600;margin-bottom:4px">Код учасника</label>
         <input id="pid" type="text" maxlength="20" placeholder="напр. K-07" autocomplete="off">
+        <div id="dyn"></div>
         <div class="scroll" style="margin-top:8px"><table id="logT"></table></div>
         <p class="muted" id="logInfo"></p>
         <div class="seg" style="margin-top:8px"><button id="csvDl" class="pri">Завантажити CSV</button><button id="csvCp">Копіювати CSV</button><button id="logClr">Очистити журнал</button></div>
@@ -515,7 +522,7 @@ const W8 = [{ n: 'ПМ', v: 315, m: 8, eff: 50 }, { n: 'АКМ', v: 715, m: 30, 
 const DIFF = [{ n: 'Навчальний', V: [5, 12], D: [18, 40], hint: 1, obl: 0 }, { n: 'Стандартний', V: [6, 18], D: [18, 48], hint: null, obl: 0 }, { n: 'Складний', V: [10, 26], D: [22, 50], hint: 0, obl: 1 }];
 const DRAG = 1.08, TIS = 2 * Math.PI / 6000;
 const fx2 = (x, n = 2) => x.toFixed(n).replace('.', ',');
-let wi = 0, di = 1, best = 0, cwi = 0;
+let wi = 0, di = 1, best = 0, cwi = 0, PROTO = false;
 try { best = +localStorage.getItem('pm-best') || 0; } catch (e) {}
 const cv = G('cv'), cx = cv.getContext('2d');
 let Wd = 0, Ht = 0, F = 1, drones = [], shots = [], fx = [], st = null, last = 0, spawnT = 0, mouse = null, clock = 0;
@@ -523,8 +530,8 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 function resize() { const r = cv.getBoundingClientRect(); if (!r.width) return; const dpr = Math.min(2, devicePixelRatio || 1); Wd = r.width; Ht = r.height; cv.width = Wd * dpr; cv.height = Ht * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); const fov = (Wd < 600 ? 14 : 24) * Math.PI / 180; F = Wd / (2 * Math.tan(fov / 2)); }
 const roG = new ResizeObserver(() => { resize(); if (!st || !st.run) draw(); }); roG.observe(cv);
 function segBtns(id, arr, cur, lab, cb) { const el = G(id); el.innerHTML = arr.map((w, i) => `<button data-i="${i}" class="${i === cur ? 'on' : ''}">${lab(w)}</button>`).join(''); el.querySelectorAll('button').forEach(b => b.onclick = () => cb(+b.dataset.i)); }
-function weapBtns() { segBtns('weap', W8, wi, w => `${w.n} · ${w.v} м/с`, i => { if (st && st.run) return; wi = i; weapBtns(); hud(); }); }
-function diffBtns() { segBtns('diff', DIFF, di, d => d.n, i => { if (st && st.run) return; di = i; diffBtns(); const h = DIFF[di].hint; const cb = G('hint'); if (h !== null) cb.checked = !!h; cb.disabled = h !== null; draw(); }); }
+function weapBtns() { segBtns('weap', W8, wi, w => `${w.n} · ${w.v} м/с`, i => { if ((st && st.run) || PROTO) return; wi = i; weapBtns(); hud(); }); }
+function diffBtns() { segBtns('diff', DIFF, di, d => d.n, i => { if ((st && st.run) || PROTO) return; di = i; diffBtns(); const h = DIFF[di].hint; const cb = G('hint'); if (h !== null) cb.checked = !!h; cb.disabled = h !== null; draw(); }); }
 let LOG = [];
 try { LOG = JSON.parse(localStorage.getItem('pm-log') || '[]'); if (!Array.isArray(LOG)) LOG = []; } catch (e) { LOG = []; }
 try { G('pid').value = localStorage.getItem('pm-pid') || ''; } catch (e) {}
@@ -532,16 +539,17 @@ G('pid').oninput = () => { try { localStorage.setItem('pm-pid', G('pid').value);
 function saveLog() { try { localStorage.setItem('pm-log', JSON.stringify(LOG)); } catch (e) {} }
 const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = v => v === null || v === undefined ? '' : String(v).replace('.', ',');
-const COLS = [['t', 'Дата і час'], ['pid', 'Учасник'], ['mode', 'Режим'], ['weap', 'Зброя'], ['hint', 'Підказка'], ['shots', 'Постріли'], ['hits', 'Влучання'], ['acc', 'Влучність, %'], ['react', 'Час реакції, с'], ['per', 'Набоїв на ураження'], ['me', 'Середня помилка, м (+ позаду)'], ['ae', 'Середня абсолютна помилка, м']];
+const COLS = [['t', 'Дата і час'], ['pid', 'Учасник'], ['proto', 'Протокол'], ['sess', '№ сесії протоколу'], ['mode', 'Режим'], ['weap', 'Зброя'], ['hint', 'Підказка'], ['shots', 'Постріли'], ['hits', 'Влучання'], ['acc', 'Влучність, %'], ['react', 'Час реакції, с'], ['per', 'Набоїв на ураження'], ['me', 'Середня помилка, м (+ позаду)'], ['ae', 'Середня абсолютна помилка, м']];
 function fmtT(iso) { const d = new Date(iso); const p = n => String(n).padStart(2, '0'); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
 function renderLog() {
+  if (typeof dynChart === 'function') try { dynChart(); } catch (e) {}
   const last = LOG.slice(-8).reverse();
   G('logT').innerHTML = LOG.length ? `<thead><tr><th>Час</th><th>Зброя</th><th class="n">Влучність</th><th class="n">Помилка, м</th></tr></thead><tbody>${last.map(r => `<tr><td>${esc(fmtT(r.t).slice(0, 5) + fmtT(r.t).slice(10))}</td><td>${esc(r.weap)}</td><td class="n">${esc(num(r.acc))} %</td><td class="n">${r.me === null ? '-' : esc(num(r.me))}</td></tr>`).join('')}</tbody>` : '';
   G('logInfo').textContent = LOG.length ? `Збережено сесій: ${LOG.length} (на цьому пристрої). У таблиці - останні ${last.length}.` : 'Журнал порожній. Після кожної 60-секундної сесії результат з’явиться тут.';
 }
 function toCSV() {
   const q = v => { const t = String(v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
-  const rows = [COLS.map(c => c[1]).join(';')].concat(LOG.map(r => COLS.map(([k]) => q(k === 't' ? fmtT(r[k]) : k === 'hint' ? (r[k] ? 'так' : 'ні') : typeof r[k] === 'number' ? num(r[k]) : (r[k] ?? ''))).join(';')));
+  const rows = [COLS.map(c => c[1]).join(';')].concat(LOG.map(r => COLS.map(([k]) => q(k === 't' ? fmtT(r[k]) : (k === 'hint' || k === 'proto') ? (r[k] ? 'так' : 'ні') : typeof r[k] === 'number' ? num(r[k]) : (r[k] ?? ''))).join(';')));
   return rows.join('\r\n');
 }
 function csvMsg(t, c) { const m = G('csvMsg'); m.textContent = t; m.className = 'msg ' + (c || ''); }
@@ -575,8 +583,39 @@ G('logClr').onclick = () => {
   if (!clrArm) { clrArm = 1; G('logClr').textContent = 'Натисніть ще раз, щоб видалити'; csvMsg(`Буде видалено ${LOG.length} сесій. Спершу збережіть CSV.`, 'bad'); setTimeout(() => { clrArm = 0; G('logClr').textContent = 'Очистити журнал'; }, 4000); return; }
   LOG = []; saveLog(); renderLog(); clrArm = 0; G('logClr').textContent = 'Очистити журнал'; G('csvBox').hidden = true; csvMsg('Журнал очищено.', '');
 };
+const pidNow = () => (G('pid').value || '').trim();
+const protoDone = () => LOG.filter(r => r.proto && r.pid === pidNow()).length;
+function protoInfo() {
+  const m = G('protoMsg');
+  if (!PROTO) { m.textContent = ''; return; }
+  if (!pidNow()) { m.textContent = 'Введіть код учасника в журналі нижче.'; m.className = 'msg bad'; return; }
+  const n = protoDone();
+  m.textContent = n >= 5 ? `Протокол для «${pidNow()}» завершено (5 з 5). Вивантажте CSV.` : `Учасник «${pidNow()}»: сесія ${n + 1} з 5.`;
+  m.className = 'msg ' + (n >= 5 ? 'good' : '');
+}
+G('proto').onchange = () => {
+  if (st && st.run) { G('proto').checked = PROTO; return; }
+  PROTO = G('proto').checked;
+  if (PROTO) { di = 1; wi = 0; G('hint').checked = false; G('hint').disabled = true; }
+  else { const h = DIFF[di].hint; G('hint').disabled = h !== null; }
+  weapBtns(); diffBtns(); if (PROTO) G('hint').disabled = true; hud(); protoInfo(); draw();
+  G('diff').classList.toggle('locked', PROTO); G('weap').classList.toggle('locked', PROTO);
+};
+G('pid').addEventListener('input', () => { protoInfo(); renderLog(); });
+function dynChart() {
+  const rows = LOG.filter(r => r.pid === pidNow() && pidNow());
+  if (rows.length < 2) { G('dyn').innerHTML = pidNow() ? '<p class="muted">Графік динаміки з’явиться після двох сесій цього учасника.</p>' : ''; return; }
+  const W = 320, H = 150, L = 34, R = 10, T = 14, B = 26, n = rows.length;
+  const x = i => L + (n === 1 ? 0 : i * (W - L - R) / (n - 1)), y = v => T + (100 - v) * (H - T - B) / 100;
+  const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.acc).toFixed(1)}`).join(' ');
+  const grid = [0, 50, 100].map(v => `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mute)">${v}</text>`).join('');
+  const dots = rows.map((r, i) => `<circle cx="${x(i)}" cy="${y(r.acc)}" r="3.5" fill="${r.proto ? '#1f4fbf' : '#8a93a6'}"/>`).join('');
+  const lab = rows.map((r, i) => (n <= 8 || i % Math.ceil(n / 8) === 0) ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--mute)">${i + 1}</text>` : '').join('');
+  G('dyn').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Динаміка влучності за сесіями">${grid}<polyline points="${pts}" fill="none" stroke="#1f4fbf" stroke-width="2"/>${dots}${lab}<text x="${W - R}" y="${T - 2}" text-anchor="end" font-size="11" fill="var(--mute)">влучність, % · сесії учасника «${esc(pidNow())}»</text></svg>`;
+}
 renderLog();
 function newGame() {
+  if (PROTO) { if (!pidNow()) { protoInfo(); return; } if (protoDone() >= 5) { protoInfo(); return; } }
   st = { run: true, t: 60, hit: 0, shot: 0, ammo: W8[wi].m, rel: 0, react: [], err: [], miss: 0 };
   drones = []; shots = []; fx = []; spawnT = 0; clock = 0; G('over').hidden = true; G('feed').textContent = ''; G('stats').innerHTML = ''; hud(); last = performance.now(); requestAnimationFrame(loop);
 }
@@ -621,8 +660,8 @@ function summary() {
     <tr><td>Середня помилка упередження</td><td class="n">${s.err.length ? (me > 0 ? 'позаду ' : 'попереду ') + fx2(Math.abs(me), 1) + ' м' : '-'}</td></tr>
   </tbody></table></div><p class="muted">${tip} Показники відповідають критеріям оцінювання індивідуального рівня методики.</p>`;
   const ae = s.err.length ? s.err.reduce((a, b) => a + Math.abs(b), 0) / s.err.length : null;
-  LOG.push({ t: new Date().toISOString(), pid: (G('pid').value || '').trim(), mode: DIFF[di].n, weap: W8[wi].n, hint: G('hint').checked ? 1 : 0, shots: s.shot, hits: s.hit, acc: s.shot ? +(acc.toFixed(1)) : 0, react: s.react.length ? +rt.toFixed(2) : null, per: s.hit ? +per.toFixed(2) : null, me: s.err.length ? +me.toFixed(2) : null, ae: ae === null ? null : +ae.toFixed(2) });
-  saveLog(); renderLog();
+  LOG.push({ proto: PROTO ? 1 : 0, sess: PROTO ? protoDone() + 1 : null, t: new Date().toISOString(), pid: (G('pid').value || '').trim(), mode: DIFF[di].n, weap: W8[wi].n, hint: G('hint').checked ? 1 : 0, shots: s.shot, hits: s.hit, acc: s.shot ? +(acc.toFixed(1)) : 0, react: s.react.length ? +rt.toFixed(2) : null, per: s.hit ? +per.toFixed(2) : null, me: s.err.length ? +me.toFixed(2) : null, ae: ae === null ? null : +ae.toFixed(2) });
+  saveLog(); renderLog(); protoInfo();
   G('ovTitle').textContent = `Результат: ${s.hit} з ${s.shot}`;
   G('ovText').textContent = s.shot ? `Влучність ${fx2(acc, 0)} %. ${tip}` : 'Пострілів не було.';
 }
